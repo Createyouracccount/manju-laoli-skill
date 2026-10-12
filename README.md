@@ -149,6 +149,29 @@ lixiaoxiao9888-create/manju-laoli-skill/
 
 ---
 
+## 🏆 赞助商
+
+感谢以下赞助商对本项目的支持：
+
+| LOGO | 类型 | 赞助商名称 | 说明 | 网站 |
+| --- | --- | --- | --- | --- |
+| *（LOGO 占位）* | — | 虚位以待 | 赞助位开放中——让你的产品出现在众多 AI 短剧创作者面前 | [联系我们](mailto:lixiaoxiao9888@gmail.com) |
+
+> 💡 **招商说明**：赞助位对模型渠道、算力平台、API 服务商及创作团队开放。
+> 合作请联系：邮箱 `lixiaoxiao9888@gmail.com` · 微信 `lisenlin998`
+
+### 🎬 分镜引擎专项赞助用户
+
+感谢以下用户赞助分镜引擎的开发（开放中）：
+
+*你的头像将出现在这里。*
+
+| 赞助用户 | 联系方式 |
+| --- | --- |
+| 虚位以待 | — |
+
+---
+
 <div align="center">
 
 ---
@@ -304,3 +327,25 @@ lixiaoxiao9888-create/manju-laoli-skill/
 **Made with ❤️ for AIGC Creators**
 
 </div>
+
+---
+
+## 🙌 贡献者与团队
+
+感谢参与产品设计、开发、测试、内容与社区建设的成员：
+
+<table>
+<tr>
+<td width="50%" valign="top">
+  <img src="https://github.com/lixiaoxiao9888-create.png?size=64" alt="老李" width="56" align="left">
+  <strong>老李<br><sub>项目发起者 · 总编导 · 微信：lisenlin998</sub></strong><br>
+  <a href="mailto:lixiaoxiao9888@gmail.com">lixiaoxiao9888@gmail.com</a><br>
+  <em>用作品说话。</em>
+  <br clear="left">
+</td>
+<td width="50%" valign="top">
+  <em>虚位以待 —— 期待你加入。</em>
+</td>
+</tr>
+</table>
+
