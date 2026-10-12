@@ -43,11 +43,13 @@
 
 感谢以下用户赞助分镜引擎的开发（开放中）：
 
-*你的头像将出现在这里。*
+<p>
+  <a href="https://github.com/coco38622"><img src="https://github.com/coco38622.png?size=64" width="48" height="48" alt="evo"></a>
+</p>
 
 | 赞助用户 | 联系方式 |
 | --- | --- |
-| 虚位以待 | — |
+| evo（coco38622） | [@coco38622](https://github.com/coco38622) |
 
 ---
 
