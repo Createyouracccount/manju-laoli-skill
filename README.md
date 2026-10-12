@@ -43,13 +43,11 @@
 
 感谢以下用户赞助分镜引擎的开发（开放中）：
 
-<p>
-  <a href="https://github.com/coco38622"><img src="https://github.com/coco38622.png?size=64" width="48" height="48" alt="evo"></a>
-</p>
+*你的头像将出现在这里。*
 
 | 赞助用户 | 联系方式 |
 | --- | --- |
-| evo（coco38622） | [@coco38622](https://github.com/coco38622) |
+| 虚位以待 | — |
 
 ---
 
@@ -346,7 +344,11 @@ lixiaoxiao9888-create/manju-laoli-skill/
   <br clear="left">
 </td>
 <td width="50%" valign="top">
-  <em>虚位以待 —— 期待你加入。</em>
+  <img src="https://github.com/coco38622.png?size=64" alt="evo" width="56" align="left">
+  <strong>evo<br><sub>H3 支线贡献者 · GitHub：coco38622</sub></strong><br>
+  <a href="https://github.com/coco38622">@coco38622</a><br>
+  <em>让 H3 支线与官方文档逐字对齐。</em>
+  <br clear="left">
 </td>
 </tr>
 </table>
