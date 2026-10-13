@@ -351,5 +351,15 @@ lixiaoxiao9888-create/manju-laoli-skill/
   <br clear="left">
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top">
+  <strong>JY<br><sub>海外剧剧本 SKILL 贡献者</sub></strong><br>
+  <em>好故事，不分国界。</em>
+  <br clear="left">
+</td>
+<td width="50%" valign="top">
+  <em>虚位以待 —— 期待你加入。</em>
+</td>
+</tr>
 </table>
 
