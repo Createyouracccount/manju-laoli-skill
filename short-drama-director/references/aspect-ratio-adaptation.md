@@ -15,13 +15,13 @@
 
 ## 一、 全流程画幅路由总表
 
-| 生产环节 | 横屏 16:9（用户指定时） | 竖屏 9:16（默认/用户指定时） | 权威文件 |
+| 生产环节 | 横屏 16:9（用户指定时） | 竖屏 9:16（用户指定时） | 权威文件 |
 |---|---|---|---|
 | **资产参考图** | 资产参考图（角色 4 View / 场景 / 道具）统一 **16:9 横屏白底**（资产图与成片画幅解耦，画幅不影响资产板） | 同上（资产图与成片画幅解耦） | `asset-spatial-ledger.md` |
-| **镜头规格五要素** | 中长焦空间纵深、**三分线左右站位**、**对角线动势**、避免 90° 侧面 | **垂直高度落差**、俯仰角对峙、**冲镜特写**、垂直安全区 | `camera-specs-15rules.md` / `action-previs-15grid.md` |
-| **双人/群像构图** | 水平展开，左右对峙（A 左 B 右，视线横向流动） | 上下纵深，前后景叠压（前景遮挡制造压迫） | `combat-direction-engine.md` |
-| **武打空间感** | 横幅利于长距离位移展示（腾空横飞、贴地滑行） | 垂直动势（下劈、贴地滑行、跳起下砸、冲镜） | `action-previs-15grid.md` |
-| **大招运镜** | 三段式横移+广角+低仰（左右冲击波扫场） | 垂直拉升+俯冲+高低位（法相压顶/腾空爆发） | `action-ultimate-finisher.md` / `anime-ultimate-vfx-paradigm.md` |
+| **镜头规格五要素** | 中长焦空间纵深、**三分线左右站位**、**对角线动势**、避免 90° 侧面 | **垂直高度落差**、俯仰角对峙、**冲镜特写**、垂直安全区 | `camera-specs-15rules.md` / `sd-combat-engine` |
+| **双人/群像构图** | 水平展开，左右对峙（A 左 B 右，视线横向流动） | 上下纵深，前后景叠压（前景遮挡制造压迫） | `sd-combat-engine` |
+| **武打空间感** | 横幅利于长距离位移展示（腾空横飞、贴地滑行） | 垂直动势（下劈、贴地滑行、跳起下砸、冲镜） | `sd-combat-engine` |
+| **大招运镜** | 三段式横移+广角+低仰（左右冲击波扫场） | 垂直拉升+俯冲+高低位（法相压顶/腾空爆发） | `sd-combat-engine/references/tier-and-finisher-system.md` / `anime-ultimate-vfx-paradigm.md` |
 | **时间轴分镜模板** | `seedance-render-engine.md` §三·1（16:9 横屏模板） | §三·2（9:16 竖屏模板） | `seedance-render-engine.md` |
 | **三层解耦投喂范式** | 主体/环境/运镜三层全按横屏构图描述 | 按竖屏构图描述 | `model-adapters.md` |
 | **API/工作流参数** | `aspect_ratio=16:9` | `aspect_ratio=9:16` | `comfyui-canvas-automation.md` |
@@ -39,7 +39,7 @@
 - **景别阶梯**：极微距→超广角→宏观全景→鸟瞰（横向铺展环境破坏）；
 - **禁**：竖屏式"垂直安全区""上下叠压构图"写法混入。
 
-### 竖屏 9:16（默认/用户指定竖屏时全模块启用）
+### 竖屏 9:16（用户指定竖屏时全模块启用）
 - **垂直纵深**：高低位落差（高位俯瞰/低位仰视）、前后景叠压遮挡；
 - **站位**：上下对峙、冲镜特写（攻击部位直冲镜头）；
 - **位移展示**：下劈、跳起下砸、贴地滑行、腾空上冲等纵向轨迹优先；
@@ -62,5 +62,5 @@
 
 - `SKILL.md`：核心法则第 10 条引用本文件；
 - `seedance-render-engine.md` / `model-adapters.md` / `comfyui-canvas-automation.md`：生成时先读本文件锁定画幅再套模板；
-- `camera-specs-15rules.md` / `action-previs-15grid.md` / `combat-direction-engine.md`：构图建议按本文件横/竖两套切换；
+- `camera-specs-15rules.md` / `sd-combat-engine`（打戏构图）：构图建议按本文件横/竖两套切换；
 - `quality-gate-review.md`：P0 门禁新增"画幅一致性"检查项。

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""build_board_lite.py — 轻量离线分镜看板编译器（V6.7 轻量版 · 简化自 6.8.3 模块 K）
+"""build_board_lite.py — 轻量离线分镜看板编译器（轻量版 · 简化自 7.3.0 模块 K）
 
 用法:
     python scripts/build_board_lite.py <项目.md> [--out <看板.html>]
@@ -46,8 +46,10 @@ from pathlib import Path
 
 # 兼容三种镜行写法：本包原生 `00:00-00:05 [镜头1] …` / `[00:00-00:05] …` / `[0-3秒] …`
 TS_RE = re.compile(
-    r"^\s*\[?\s*(\d{1,2}(?::\d{2})?)\s*[-~—]\s*(\d{1,2}(?::\d{2})?)\s*秒?\s*\]?\s*(.*)$")
-SHOT_NO_RE = re.compile(r"^\[镜头\s*\d+\]\s*")
+    r"^\s*(?:[\[【]?\s*镜头\s*\d+\s*[\]】]?\s*[,，]?\s*)?"
+    r"\[?\s*(\d{1,2}(?::\d{2})?(?:\.\d+)?)\s*s?\s*[-~～—→]\s*"
+    r"(\d{1,2}(?::\d{2})?(?:\.\d+)?)\s*(?:秒|s)?\s*\]?\s*[,，]?\s*(.*)$", re.I)
+SHOT_NO_RE = re.compile(r"^[\[【]?\s*镜头\s*\d+\s*[\]】]?\s*[,，]?\s*")
 
 
 def shot_text(s: str) -> str:
@@ -58,10 +60,19 @@ FIELD_RE = re.compile(r"^【([^】]{2,8})】\s*[:：]\s*(.+)$")
 
 
 def to_seconds(tok: str) -> float:
-    tok = tok.strip()
+    """时码 → 秒。兼容 MM:SS / MM:SS.s / MM:SS.ss 与纯秒。
+
+    ⚠️ 秒位必须 float()（2026-10-14 Agent 修复）：
+    原实现写 `int(s)`，遇半秒时码 `00:10.5` 直接抛 ValueError，
+    该镜行随即被调用点的 `except ValueError: continue` **静默跳过**——
+    实测《盐枭劫-60s测试局》源稿 17 镜只解析出 10 镜（丢 7 镜 / 41%），
+    看板与 SRT·CSV·JSON 三导出的全片时间轴随之出现 7 秒空洞，而 CLI 零告警。
+    本包真实产物普遍使用半秒粒度（`00:10.5` / `00:03.5`），故此处必须收 float。
+    """
+    tok = tok.strip().replace("：", ":")
     if ":" in tok:
         m, s = tok.split(":", 1)
-        return int(m) * 60 + int(s)
+        return int(m) * 60 + float(s)
     return float(tok)
 
 
@@ -210,6 +221,11 @@ def parse_md(md_text: str) -> dict:
             section = m_sec.group(1).strip()
             seg, ap, sub_head = None, None, ""
             data["_head"] = None            # 表头映射不跨章节
+            if re.match(r"^【?投喂单元", section) or re.match(r"^段\s*\d", section):
+                seg = {"no": len(data["segments"]) + 1, "name": section,
+                       "raw": "", "shots": [], "fields": {}, "warnings": []}
+                data["segments"].append(seg)
+                continue
             if zone_of(section) == "":
                 data["extras"].append({"title": section, "body": []})
             continue
@@ -309,7 +325,8 @@ def parse_md(md_text: str) -> dict:
                 try:
                     start, end = to_seconds(fmt.group(1)), to_seconds(fmt.group(2))
                 except ValueError:
-                    seg["warnings"].append(f"时间戳无法解析：{s[:30]}")
+                    seg["warnings"].append(
+                        f"镜行时码无法解析、该镜已被跳过（看板与三导出会缺此镜）：{s[:40]}")
                 else:
                     seg["shots"].append({"no": len(seg["shots"]) + 1,
                                          "start": start, "end": end,
@@ -321,7 +338,7 @@ def parse_md(md_text: str) -> dict:
     flush_plain()
 
     # 围栏原文归属：段 / 资产出图
-    parts = re.split(r"^#{3,4}\s+", md_text, flags=re.M)
+    parts = re.split(r"^#{2,4}\s+", md_text, flags=re.M)
     def fence_of(body):
         fs = FENCE_RE.findall(body)
         return max(fs, key=len).strip() if fs else ""
@@ -343,6 +360,7 @@ def parse_md(md_text: str) -> dict:
     for seg in data["segments"]:
         if not seg["raw"]:
             seg["warnings"].append("未找到 ```text 围栏投喂原文（无法直接复制投喂）")
+        _skipped = []
         if not seg["shots"]:
             for l in seg["raw"].splitlines():     # K-lite-2 降级：从围栏内提取时间戳
                 fm = TS_RE.match(l.strip())
@@ -350,9 +368,25 @@ def parse_md(md_text: str) -> dict:
                     try:
                         a, b = to_seconds(fm.group(1)), to_seconds(fm.group(2))
                     except ValueError:
+                        # ★2026-10-14 Agent 修复：原为裸 `continue` —— 丢镜不留痕。
+                        # 静默丢镜会让看板与三导出悄悄缺镜（实测曾丢 41%），必须记账。
+                        _skipped.append(l.strip()[:48])
                         continue
                     seg["shots"].append({"no": len(seg["shots"]) + 1,
                                          "start": a, "end": b, "text": shot_text(fm.group(3))})
+        # ★丢镜安全网（2026-10-14 Agent 新增）：以「原文带时码的行数」为基准对账，
+        #   任何解析器缺陷造成的静默丢镜都会被这一条兜住，不必逐类枚举病因。
+        _tc_lines = [l for l in seg["raw"].splitlines() if TS_RE.match(l.strip())]
+        if _skipped:
+            seg["warnings"].append(
+                f"有 {len(_skipped)} 行镜行时码无法解析、该镜已被跳过"
+                f"（看板与 SRT/CSV/JSON 三导出会缺这些镜）：{'；'.join(_skipped[:4])}"
+                + ("…" if len(_skipped) > 4 else ""))
+        if len(_tc_lines) > len(seg["shots"]):
+            _lost = len(_tc_lines) - len(seg["shots"])
+            seg["warnings"].append(
+                f"丢镜告警：原文带时码的镜行 {len(_tc_lines)} 行，仅解析出 {len(seg['shots'])} 镜，"
+                f"缺 {_lost} 镜——请核对镜行时码写法（支持 `MM:SS` / `MM:SS.s` / `Xs-Ys` / `N-N秒`）")
         if not seg["shots"]:
             seg["warnings"].append("未解析到 [起-止秒] 逐镜时间戳行")
         else:
@@ -373,6 +407,21 @@ def parse_md(md_text: str) -> dict:
     if not data["asset_prompts"]:
         data["warnings"].append({"seg": 0,
             "msg": "未解析到「## P2.5 · 资产出图提示词」——⑤ 资产出图提示词与 ③ 分镜投喂提示词必须同板呈现（K-lite-4）"})
+    else:
+        for _it in data["asset_prompts"]:
+            _bd = (_it.get("raw") or "").strip()
+            _cd = (_it.get("code") or _it.get("name") or "").upper()
+            _missing_fp = (
+                len(_bd) < 150
+                or "同板四视图" in _bd or "T-pose" in _bd or "九机位小图" in _bd or "详见 P2" in _bd or "不另写文字描述" in _bd
+                or ("CHR" in _cd and not ("无脸全身" in _bd or "featureless face" in _bd))
+                or ("SCN" in _cd and not ("九宫格" in _bd or "摄影机矩阵" in _bd))
+            )
+            if _missing_fp:
+                data["warnings"].append({
+                    "seg": 0, "lvl": "WARN", "code": "K-lite-4b",
+                    "msg": f"K-lite-4b 资产「{_it.get('code') or _it.get('name', '')}」出图提示词疑似简笔空壳（仅 {len(_bd)} 字或未落权威模板指纹）——须按 sd-asset-engine 权威模板写满（角色四格无脸+声纹锚 / 场景母版+九宫格8字段 / 道具4格）"
+                })
     if data["meta"]["画幅"] == "未锁定":
         data["warnings"].append({"seg": 0, "msg": "未声明【画幅】——B 锁未锁定（用户未指定 ≠ 默认 9:16）"})
     if data["meta"]["模型版本"] == "未锁定":
@@ -534,7 +583,10 @@ function hdr(){
     `模型 ${p.model} · 画幅 ${p.aspect} · ${p.seg_count} 段 / ${p.shot_count} 镜 / 总时长 ${p.total}s · 编译于 ${p.built_at}`;
   document.getElementById('bar').innerHTML =
     `<div class="chip k"><b>轻量校验</b> ${D.warnings.length} WARN / 0 ERROR</div>`
-    + `<button class="chip" onclick="toggleOnly()" id="btnOnly">只看告警</button>`;
+    + `<button class="chip" onclick="toggleOnly()" id="btnOnly">只看告警</button>`
+    + `<button class="chip" onclick="exportSRT()">⬇ 导出 SRT 字幕</button>`
+    + `<button class="chip" onclick="exportTimelineCSV()">⬇ 导出剪辑时间线 CSV</button>`
+    + `<button class="chip" onclick="exportPayloadJSON()">⬇ 导出 API 载荷 JSON</button>`;
 }
 function toggleOnly(){ onlyBad=!onlyBad; document.getElementById('btnOnly').classList.toggle('on',onlyBad);
   document.getElementById('btnOnly').classList.toggle('warn',onlyBad); paint(); }
@@ -658,15 +710,193 @@ function cpall(ids,e){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(legacy);}
   else{legacy();}
 }
+function dlBlob(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 300);
+}
+function fmtSrtTime(sec){
+  // ★2026-10-15 修复：原 `ms=Math.round((sec%1)*1000)` + `totalS=Math.floor(sec)` 分立取整，
+  //   小数位进位到 1000ms 时印出非法 `,1000` 且秒位不结转。改为「总毫秒一次取整再拆分」。
+  let totalMs = Math.round(sec * 1000); if (totalMs < 0) totalMs = 0;
+  const ms = totalMs % 1000;
+  const totalS = Math.floor(totalMs / 1000);
+  const s = totalS % 60;
+  const m = Math.floor(totalS / 60) % 60;
+  const h = Math.floor(totalS / 3600);
+  const pad = (n, w=2) => String(n).padStart(w, '0');
+  return `${pad(h)}:${pad(m)}:${pad(s)},${pad(ms, 3)}`;
+}
+function exportSRT(){
+  let idx = 1, lines = [];
+  (D.segments||[]).forEach(seg=>{
+    const off = seg.off || 0;
+    (seg.shots||[]).forEach(sh=>{
+      const m = (sh.text||'').match(/台词：【([^】]+)】/);
+      if(m && !m[1].startsWith('无')){
+        lines.push(`${idx++}\n${fmtSrtTime(off + sh.start)} --> ${fmtSrtTime(off + sh.end)}\n${m[1]}\n`);
+      }
+    });
+  });
+  dlBlob((D.meta&&D.meta.title||'short_drama') + '.srt', lines.join('\n') || '1\n00:00:00,000 --> 00:00:02,000\n（无对白）\n', 'text/plain;charset=utf-8');
+}
+function exportTimelineCSV(){
+  const escCsv = v => '"' + String(v==null?'':v).replace(/"/g, '""') + '"';
+  const rows = [['段落', '镜号', '段内起秒', '段内止秒', '全片起秒', '全片止秒', '时长(s)', '镜头内容与台词']];
+  (D.segments||[]).forEach(seg=>{
+    const off = seg.off || 0;
+    (seg.shots||[]).forEach(sh=>{
+      rows.push([seg.name, '镜'+sh.no, sh.start, sh.end, off+sh.start, off+sh.end, Math.max(sh.end-sh.start,0), sh.text||'']);
+    });
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.map(escCsv).join(',')).join('\r\n');
+  dlBlob((D.meta&&D.meta.title||'short_drama') + '_timeline.csv', csv, 'text/csv;charset=utf-8');
+}
+function exportPayloadJSON(){
+  dlBlob((D.meta&&D.meta.title||'short_drama') + '_payload.json', JSON.stringify(D, null, 2), 'application/json;charset=utf-8');
+}
 paint();
 </script></body></html>"""
 
 
+def export_srt_text(data):
+    idx, lines = 1, []
+    def _fmt(sec):
+        # ★2026-10-15 修复：原 `ms=int(round((sec%1)*1000))` + `ts=int(sec)` 分立取整，
+        #   当小数位进位到 1000ms（如 4.9995→round(999.5)=1000）会印出非法 `,1000`
+        #   且秒位不结转 → 00:00:04,1000（SRT 毫秒须 000~999）。改为「总毫秒一次取整再拆分」。
+        total_ms = max(int(round(sec * 1000)), 0)
+        ms = total_ms % 1000
+        ts = total_ms // 1000
+        return f"{ts // 3600:02d}:{(ts // 60) % 60:02d}:{ts % 60:02d},{ms:03d}"
+    for seg in data.get("segments", []):
+        off = seg.get("off", 0)
+        for sh in seg.get("shots", []):
+            m = re.search(r"台词：【([^】]+)】", sh.get("text", ""))
+            if m and not m.group(1).startswith("无"):
+                lines.append(f"{idx}\n{_fmt(off + sh['start'])} --> {_fmt(off + sh['end'])}\n{m.group(1)}\n")
+                idx += 1
+    return "\n".join(lines)
+
+
+def export_timeline_csv_text(data):
+    def _esc(v):
+        return '"' + str(v if v is not None else "").replace('"', '""') + '"'
+    rows = [["段落", "镜号", "段内起秒", "段内止秒", "全片起秒", "全片止秒", "时长(s)", "镜头内容与台词"]]
+    for seg in data.get("segments", []):
+        off = seg.get("off", 0)
+        for sh in seg.get("shots", []):
+            rows.append([
+                seg.get("name", ""),
+                f"镜{sh.get('no', '')}",
+                sh.get("start", 0),
+                sh.get("end", 0),
+                off + sh.get("start", 0),
+                off + sh.get("end", 0),
+                round(max(sh.get("end", 0) - sh.get("start", 0), 0), 2),
+                sh.get("text", ""),
+            ])
+    return "\ufeff" + "\r\n".join(",".join(_esc(c) for c in r) for r in rows)
+
+
+def self_test():
+    sample = (
+        "# 测试剧目\n"
+        "## 【投喂单元 1/1 · 段1】\n"
+        "```text\n"
+        "【画幅风格】16:9 横屏\n"
+        "【场景资产】@走廊\n"
+        "【核心人物】@甲\n"
+        "【站位声明】@甲（画面左）\n"
+        "【时间轴分镜】\n"
+        "[镜头1] 0-4秒，中景·平视·固定。甲开口。声音：无。台词：【甲（低沉）：“你好。”】\n"
+        "[镜头2] 4-8秒，近景·平视·缓推。甲定格。声音：无。台词：无。\n"
+        "【音效】环境音\n"
+        "【强制禁止项】无字幕\n"
+        "```\n"
+    )
+    d = parse_md(sample)
+    assert len(d["segments"]) == 1 and len(d["segments"][0]["shots"]) == 2
+    srt = export_srt_text(d)
+    csv_txt = export_timeline_csv_text(d)
+    html = build_html(d)
+    assert "00:00:00,000 --> 00:00:04,000" in srt and "你好" in srt
+    assert "镜1" in csv_txt and "exportSRT()" in html and "exportTimelineCSV()" in html
+
+    # ---- 2026-10-14 Agent 修复回归锁：半秒时码 MM:SS.s 必须被正确解析，且不得丢镜 ----
+    for _tok, _exp in (("00:10.5", 10.5), ("00:03.5", 3.5), ("00:12.5", 12.5),
+                       ("00:04", 4.0), ("12.5", 12.5), ("0-3秒", None)):
+        if _exp is not None:
+            _got = to_seconds(_tok)
+            assert abs(_got - _exp) < 1e-9, f"to_seconds({_tok!r}) = {_got}，应为 {_exp}"
+    sample2 = (
+        "# 半秒时码回归用例\n"
+        "## 【投喂单元 1/1 · 段1】\n"
+        "```text\n"
+        "【画幅风格】16:9 横屏\n"
+        "【场景资产】@走廊\n"
+        "【核心人物】@甲\n"
+        "【站位声明】@甲（画面左）\n"
+        "【时间轴分镜】\n"
+        "00:00-00:04 [镜头1] 中景 · 平视 · 固定。甲开口。声音：无。台词：【甲（低沉）：“一。”】\n"
+        "00:04-00:08 [镜头2] 近景 · 平视 · 缓推。甲转头。声音：无。台词：无。\n"
+        "00:08-00:10.5 [镜头3] 特写 · 平视 · 固定。甲眨眼。声音：无。台词：无。\n"
+        "00:10.5-00:12.5 [镜头4] 近景 · 斜角 · 极缓慢推。甲抬手。声音：无。台词：无。\n"
+        "00:12.5-00:15 [镜头5] 中景 · 正面 · 缓拉。甲定格。声音：无。台词：无。\n"
+        "【音效】环境音\n"
+        "【强制禁止项】无字幕\n"
+        "```\n"
+    )
+    d2 = parse_md(sample2)
+    _shots2 = d2["segments"][0]["shots"]
+    assert len(_shots2) == 5, f"半秒时码稿应解析出 5 镜，实得 {len(_shots2)} 镜（丢镜即本用例拦截目标）"
+    assert abs(_shots2[2]["end"] - 10.5) < 1e-9 and abs(_shots2[3]["start"] - 10.5) < 1e-9, \
+        "半秒时码应解为 10.5s（原缺陷为 10.05s）"
+    assert not any("丢镜" in w["msg"] or "跳过" in w["msg"] for w in d2["warnings"]), \
+        f"半秒时码稿不应报丢镜告警：{[w['msg'] for w in d2['warnings']]}"
+
+    # ---- 2026-10-15 Agent 修复回归锁：SRT 毫秒进位 ----
+    #   原 `_fmt` 用 `ms=int(round((sec%1)*1000))` + `ts=int(sec)` 分立取整，
+    #   小数位进位到 1000ms（如 4.9995→round(999.5)=1000）会印出非法 `,1000` 且秒位不结转。
+    #   改为「总毫秒一次取整再拆分」后，4.9995s 必须结转为 00:00:05,000。
+    _d3 = parse_md(
+        "# SRT进位\n"
+        "## 【投喂单元 1/1 · 段1】\n"
+        "```text\n"
+        "【画幅风格】16:9 横屏\n"
+        "【场景资产】@走廊\n"
+        "【核心人物】@甲\n"
+        "【站位声明】@甲（画面左）\n"
+        "【时间轴分镜】\n"
+        "0-4.9995s [镜头1] 中景。甲。台词：【甲：“进位测试。”】\n"
+        "```\n"
+    )
+    _srt3 = export_srt_text(_d3)
+    assert ",1000" not in _srt3, f"SRT 毫秒不得进位成非法 ,1000：{_srt3!r}"
+    assert "00:00:05,000" in _srt3, f"4.9995s 应结转为 00:00:05,000：{_srt3!r}"
+    assert "00:00:00,000 --> 00:00:05,000" in _srt3, f"进位后起止应连续：{_srt3!r}"
+    print("[+] build_board_lite self-test PASSED")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("src")
+    ap.add_argument("src", nargs="?")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--export-srt", default=None, help="同时导出 .srt 字幕文件")
+    ap.add_argument("--export-csv", default=None, help="同时导出剪辑时间线 .csv 文件")
+    ap.add_argument("--export-json", default=None, help="同时导出结构化 API 载荷 .json 文件")
+    ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
+    if a.self_test:
+        sys.exit(self_test())
+    if not a.src:
+        ap.print_help()
+        sys.exit(2)
     src = Path(a.src)
     if not src.exists():
         print(f"[X] 源文件不存在：{src}")
@@ -680,6 +910,15 @@ def main():
     for w in data["warnings"]:
         print(f"    ⚠ {w['msg']}")
     print(f"[+] 看板：{out}")
+    if a.export_srt:
+        Path(a.export_srt).write_text(export_srt_text(data), encoding="utf-8")
+        print(f"[+] SRT 字幕：{a.export_srt}")
+    if a.export_csv:
+        Path(a.export_csv).write_text(export_timeline_csv_text(data), encoding="utf-8")
+        print(f"[+] 剪辑时间线 CSV：{a.export_csv}")
+    if a.export_json:
+        Path(a.export_json).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[+] API 载荷 JSON：{a.export_json}")
 
 
 if __name__ == "__main__":

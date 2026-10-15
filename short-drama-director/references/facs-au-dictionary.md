@@ -2,7 +2,7 @@
 
 > 依据 Ekman & Friesen 的 Facial Action Coding System：每个 AU 是**一组可独立做出、肉眼可辨**的面部动作，标注其主要肌肉与形态。写提示词时写"可见形态"（肌肉名可省），让模型知道画面上要出现什么。
 > 目录：一、上半脸（眉/眼）｜二、下半脸（鼻/颧/嘴/下颌）｜三、眼睑与眨眼｜四、头位/视线/自主神经（非 AU 但常用）｜五、最易混 AU 对照。
-> 用法入口见 `★ facs-micro-expression.md`（表情引擎总控）· 情绪组合配方见 `facs-emotion-recipes.md`。
+> 用法入口见 `facs-micro-expression.md`（表情引擎总控）· 情绪组合配方见 `facs-emotion-recipes.md`。
 
 ## 一、上半脸（眉与额、眼）
 | AU | 名称 | 主要肌肉 | 肉眼可见形态 | 典型出现于 |

@@ -2,16 +2,17 @@
 
 # 🎬 漫剧老李 AIGC 创作全流程 Skill
 
-## **V6.9.8 轻量版** · Short-Drama Director Suite
+## **V7.4.20 多技能套装版** · Short-Drama Director Suite
 
-> 🎨 面向 **AIGC 视听创作** 的工业化全流程技能包
-> 从创意立项到视频模型投喂提示词 —— 给 AI 助手 / LLM 直接调用
+> 🎨 面向 **AIGC 视听创作** 的工业级全流程技能包（**1 总控 + 12 子技能 · 四层纵深**）
+> 从创意立项、剧本、资产、分镜到视频模型投喂提示词与独立质检 —— 给 AI 助手 / LLM 直接调用
 
-![Version](https://img.shields.io/badge/版本-V6.9.8--轻量版-6a5acd)
-![Modules](https://img.shields.io/badge/规则库-41%20模块-00b4d8)
-![Files](https://img.shields.io/badge/文件-49-2ec4b6)
+![Version](https://img.shields.io/badge/版本-V7.4.20--套装版-6a5acd)
+![Structure](https://img.shields.io/badge/结构-1%20总控%20%7C%2012%20子技能-8e44ad)
+![Rulebooks](https://img.shields.io/badge/规则库-48%20份-00b4d8)
+![Files](https://img.shields.io/badge/文件-154-2ec4b6)
 ![Models](https://img.shields.io/badge/模型-Seedance%202.5%20%7C%202.0%20%7C%20MiniMax%20H3-9d4edd)
-![QC](https://img.shields.io/badge/机检-C1~C20%20%7C%20H1~H12-ff6b6b)
+![QC](https://img.shields.io/badge/机检-C1~C26%20%7C%20H1~H12-ff6b6b)
 ![Platform](https://img.shields.io/badge/平台-OpenClaw%20%7C%20Coze%20%7C%20Dify%20%7C%20WorkBuddy-ff9f43)
 ![License](https://img.shields.io/badge/License-MIT-ffca3a)
 ![Stars](https://img.shields.io/github/stars/lixiaoxiao9888-create/manju-laoli-skill?style=social)
@@ -21,7 +22,7 @@
 ### 🎥 生产管线
 
 ```
-📋 立项锁定 → ✍️ 门控编剧 → 🎙️ 台词诊断 → 🖼️ 资产锁定 → 🎬 文武双模分镜 → 🚀 提示词封装 → ✅ 独立质检 → 🖥️ 离线看板
+📋 立项锁定 → 🧭 赛道分流 → ✍️ 五阶门控剧本 → 🖼️ 资产锁定 → 🎬 文武双模分镜 → 🚀 提示词封装 → ✅ 独立质检 → 🖥️ 离线看板
 ```
 
 </div>
@@ -54,13 +55,17 @@
 
 ## 🧭 这是什么
 
-一套 **给 AI 助手执行的 AIGC 创作规则库**（OpenClaw Skill / Agent 技能包），不是面向消费者的成品剧本——把 `SKILL.md` 与 `references/` 放进 Agent 技能目录即可调用。
+一套 **给 AI 助手执行的 AIGC 全流程创作规则库**（OpenClaw Skill / Agent 技能包）。**V7.4.20 起升级为「多技能套装」**：**1 个总控**（`short-drama-director`）+ **12 个子技能**（`sd-*-engine`），**四层纵深架构**——不是单一 `SKILL.md`，而是一套可路由、可挂载、可机检的导演系统。
+
+> **核心理念**：「**用户看到的是 5 个步骤，AI 内部跑的是 100 条规则**」——用户层只做「① 做什么 ② 从哪来 ③ 模型 ④ 画幅 ⑤ 要什么结果」，**锁 / 路由 / 子技能挂载 / 机检全部由总控内部完成**，用户**不需要手动调用任何子技能**（直接说需求，总控自动路由；但六道锁必须弹出让用户勾选）。
 
 它把「AIGC 视听创作」拆成一条可复用的工业化管线，核心解决三件事：
 
-1. **不漂移** —— 角色 / 场景 / 道具**先出图锁定**，再进分镜（Asset-First：**资产图先于分镜**），跨镜跨集一致性有据可依；
-2. **不返工** —— 前置强制锁定（模型版本 / 画幅）+ 投喂前必查清单 + P0~P2 独立门禁 + **稿件级机检**，把错误拦在生成之前；
-3. **能直接投喂** —— 输出**七段式**结构化提示词，整组复制即可喂给视频模型，不需要二次翻译；走 **MiniMax H3** 时自动转成 H3 原生六段式。
+1. **不漂移** —— 角色 / 场景 / 道具**先锁定再进分镜**（Asset-First），跨镜跨集一致性有据可依；
+2. **不返工** —— **六道前置锁 + 投喂必查清单 + P0~P2 独立门禁 + 稿件级机检**，把错误拦在生成之前；
+3. **能直接投喂** —— 输出 **七段式**结构化提示词，整组复制即可喂给视频模型；走 **MiniMax H3** 时自动转 H3 原生六段式。
+
+> 🔑 **本包不持有图**：交付的是「**提示词 + 接线说明书**」——图由用户在外部平台（即梦 / Seedance / 豆包等）自行生成并持有。素材按**存在形态**分三档：**M0 纯提示词 / M1 编号占位（默认）/ M2 已入库**，**每次交付首行声明形态**。
 
 ## 🎯 适用场景
 
@@ -68,30 +73,62 @@
 
 - **AI 短剧 / 漫剧 / 短视频剧集**（本包最典型的高密度场景）
 - **AI 广告片 / 品牌宣传片 / 概念片**
-- **分镜预演（PREVIS）与动态分镜**
-- **武打 / 动作场面设计**（现代格斗、武侠、仙侠、二次元、科幻）
+- **分镜预演（PREVIS）与动态分镜** · **武打 / 动作场面设计**（现代格斗、武侠、仙侠、二次元、科幻）
+- **历史 / 科普 / 盘点解说叙事**（赛道③，挂载 `sd-jieshuo-engine`）
+- **海外剧 / 多语 / 方言**（赛道②，挂载 `sd-overseas-engine`）
 - **情绪戏 / 微表情专项**（FACS 表情工程）
 - 任何需要**跨镜头角色一致性**的 AI 视频生产
 
-> 题材覆盖：现代都市 / 古装武侠 / 玄幻仙侠 / 悬疑 / 科幻 / 赛博 / 水墨国漫 —— 含六大电影级视听美学预设（诗意 / 纪实 / 港派 / 赛博 / 水墨 / 国漫）。
+## 🧩 四层纵深架构（1 总控 + 12 子技能）
+
+| 层 | 技能 | 职责 |
+|:---:|:---|:---|
+| **L0 总控** | `short-drama-director` | 赛道分流 · 素材来源 · **素材形态 M0/M1/M2** · 锁系统 · **48 份规则库**（含 style-bible 画风锁知识库 10 份）· 七段式与 H3 格式 · 机检 **C1~C26**（另设增量主码 C27~C30）· P0~P2 门禁 · ★场面调度 · ★素材形态与接线单 |
+| **L1 决策** | `sd-decision-engine` | 情境映射 E01~E15 + 80/15/5 权重 + 情绪锚点表 + 构图雷区 A/B 双态白名单——回答「这场戏该用什么镜头」 |
+| **L2 生产** | `sd-recon-engine` | 素材采风与对标情报（只交付《对标情报卡》，不做打分 / 聚簇 / 台账 / 定时抓取） |
+| | `sd-script-engine` | 剧本创作与小说改编（六阶段编剧链 + 五席圆桌审核 + 台词七维诊断 + 拟人化引擎 + 外来剧本润色层） |
+| | `sd-overseas-engine` | 赛道② 海外剧剧本（语言与风格合同 · 三级校准状态 · 北美英语对白适配） |
+| | `sd-jieshuo-engine` | 赛道③ 解说叙事剧本（历史人物志 / 事件战役 / 科普知识 · 旁白稿 VO Script · 4.5~6.5 字/秒） |
+| | `sd-asset-engine` | 资产锁定（三清单 · 场景连续性 · 道具单实例锁 · 人群调度 · 按素材形态产出 + 接线单） |
+| | `sd-storyboard-engine` | 文戏/日常戏分镜（★故事板图·面板链 · 剧情分镜格 · 段内衔接 5 维 / 运镜 5 模式） |
+| | `sd-combat-engine` | 通用打戏分镜（摄影机行为锁 · 战场群战速查） |
+| | `sd-xuanhuan-engine` | 玄幻仙侠打戏（黄金颗粒度 · 双向攻防 · 收束闭环 · 法武合一招式库） |
+| | `sd-real-engine` | 真人写实打戏（R1 克制档 · 11 环动力链 · 真实格斗招式库 · 多人战斗调度） |
+| **L3 交付** | `sd-feed-engine` | A/B/C 输出模式 + **六道闸门**（闸门 6 = 编号一致性 + 素材形态一致性）+ 素材映射 / 人物锚定 + 《素材接线单》+ 多段衔接 + 工程语言清洗 |
+| | `sd-qc-engine` | 成片质检与连续性管理（一致性台账 · 剪辑转场 · 声音设计 · 后期音乐与 BGM Cue Sheet · 出稿机检） |
+
+## 🔒 六道前置锁 + I 画风锁（动手前全部弹出让用户勾选）
+
+| 锁 | 选项 | 说明 |
+|:---:|:---|:---|
+| **〇·0 赛道分流** | ① 国内剧 ② 海外剧 ③ 解说叙事类 ④ 其他 | 第零道锁，先于一切；②挂 `sd-overseas-engine`，③挂 `sd-jieshuo-engine` |
+| **〇·1 素材来源** | ① 原创 ② 改编 ③ 对标爆款 ④ 热点速成 | 与〇·0 **正交可组合**；③④ 挂 `sd-recon-engine`，先出《对标情报卡》 |
+| **A 模型版本** | Seedance 2.5 / 2.0 / MiniMax H3 格式支线 | **三选一**，锁定后语法契约彻底分流 |
+| **B 画幅** | 16:9 / 9:16 / 21:9 | 与模型版本同规格前置锁定，未指定不动笔 |
+| **C 交付形态** | ① 离线看板 ② md ③ 两者都交付 | ★ 强制锁，未指定 = 停下询问 |
+| **D 段缝衔接方式** | ① 末帧定格承接 ② 换机位硬切 ③ 空镜过渡 ④ 技巧型转场 | 多段任务四选一，四项独立弹出 |
+| **I 画风锁** | 候选卡内勾选（含「按你的推荐走」） | 导演风格卡锁定，选定即冻结 |
+
+> ⚠️ 任何一道未指定，**必须停下询问并把选项摆出来让用户勾**——禁止默认跳过、禁止替用户推断（硬门，不是建议）。另含**动作强度三档定档**：`R1 写实克制` / `R2 商业高燃（默认）` / `R3 玄幻大招`。
 
 ## 🔥 核心能力
 
 | 阶段 | 能力 | 说明 |
 |:---:|:---|:---|
-| 📋 **立项** | 前置强制锁定 | 模型版本（**三选一**：Seedance 2.5 / Seedance 2.0 / **MiniMax H3 格式支线**）+ 画幅（16:9 / 9:16 / 21:9 **三选一**）+ 段缝衔接方式（多段任务）——未指定不动笔，禁止默认 |
-| ✍️ **剧本** | 五阶门控引擎 | Premise → Structure → Beat → Entity → Page；含三幕结构、因果节拍表与专业剧本页排版 |
+| 🧭 **赛道** | 〇·0 强制分流 | 国内剧 / 海外剧 / 解说叙事 / 其他——各赛道规则集映射，中文 字/秒 vs 英文 词/秒 vs 解说 4.5~6.5 字/秒 |
+| 📥 **采风** | 对标情报（★〇·1） | 信源分级（T1 平台官方 / T1.5 数据指数站 / T2 媒体与讨论，含外网独立指数）· 采风四步 · 《对标情报卡》十三项字段 · 六条证据纪律 |
+| ✍️ **剧本** | 六阶段编剧链 | 来源登记 → IP 与角色开发 → 开发圣经 → 分集规划 → 正式剧本 → 五席圆桌审核；含反捧杀 / 台词七维诊断 / 台词拟人化引擎 / 平台节奏矩阵 |
 | 📈 **情绪** | 12 节拍曲线 | 全片张力 0~10 量化 + 折线图脚本；波峰/波谷与第 9 节拍反杀峰值校验 |
-| 🎙️ **台词** | 七维诊断 + 语速自检 + **语气位** | 三维语速档（3.5~5 字/秒基准）、超长句拆镜、金句发酵气口；**对白三要素之三（HOW THEY SOUND）**——台词统一 `台词：【角色（语气）："…"】`，2.0/2.5 同规格必写 |
-| 🖼️ **资产** | Asset-First 数字资产包 | 角色 **4 View 资产板**（五官 10 项 + 服装材质 6 项）/ 场景空间图三件套 / 道具图；《资产图册》CHR/AUD/PRP/SCN/Uxx 台账；A/B/C 分级、依赖 A0~A3 按需触发 |
-| 🎥 **空间** | 一行式站位 + 分级 | 【站位声明】四要素（位置/依托物/朝向/姿态）+ 轴线锁 + 位移链；空间 S0~S4 分级；180° 轴线；**人物账连续·摆位必入画**（摆了位的人本段必须被镜头带到，否则写明离画/退场） |
-| 🎬 **分镜** | 文武双模 + 首镜锚定 | 文戏微表情六阶段递进 / 武戏 15 秒 PREVIS 完播评分（R1 写实 · R2 商业高燃 · R3 玄幻）；镜头规格 15 铁律 + 三手法六式衔接；**首镜锚定·景别一致·姿态延续·视线指派**（首镜必带具名主体）+ **首镜单主体**（禁「X 与 Y 同框」并列句式） |
-| 😀 **表演** | FACS 微表情引擎 | 情绪 AU 化：四区拆解 + 强度三档 + 真假笑铁律 + 情绪→AU 配方库与 AU 字典（增强模块 · 按需触发） |
-| ⚔️ **资料库** | 武学 / 玄幻 | 23 门武学 + 9 套剑法 + 兵器 + 轻功 + 11 环杀招；玄幻法术 R3（法宝 / 五行术法 / 能量具象 / 对军清场） |
-| 🚀 **提示词** | 七段式主格式 + **H3 格式支线** | 【画幅风格】→【场景资产】→【核心人物】→【站位声明】→【时间轴分镜】→【音效】→【强制禁止项】；2.5 走官方声音字符（`<>` `{}` `()` `【】`）+ Hit-Stop 顿挫 + 任务模式二选一（全能参考 / 首尾帧）；**选 H3 时自动转 Ref2VA 六段式**（subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music） |
-| 🚫 **禁令** | 禁令失效三改法 | 视频模型对否定不敏感、对词根敏感——被禁概念的词根哪怕挂着"不/禁"也会被渲染；禁止项栏目纪律（只装负面清单，禁混正向执行指令） |
-| ✅ **质检** | P0~P2 门禁 + 稿件级机检 | 时长 / 台词 / 跳轴 / 画幅 / 资产锚点一致性 + 声音三层相对电平 + **改动后三步复验铁律**；`validate_prompt.py` 出稿机检 **C1~C20**（Seedance 侧）/ **H1~H12**（H3 侧，`--model h3`） |
-| 🖥️ **看板** | 离线分镜看板 | 项目 md（唯一真相）→ 单文件 HTML，双击即开；P2.5 出图词与 P4 投喂词必同板 |
+| 🎙️ **台词** | 七维诊断 + 语速自检 + 语气位 | 三维语速档、超长句拆镜、金句发酵气口；对白统一 `台词：【角色（语气）："…"】`，2.0/2.5 同规格必写 |
+| 🖼️ **资产** | Asset-First 资产包 | 角色资产板 / 场景空间图三件套 / 道具图；CHR/AUD/PRP/SCN/Uxx 台账；A/B/C 分级、A0~A3 按需触发 |
+| 🎥 **空间** | 一行式站位 + 分级 | 【站位声明】四要素 + 轴线锁 + 位移链；空间 S0~S4；180° 轴线；**人物账连续·摆位必入画** |
+| 🎬 **分镜** | 文武双模 + 故事板图 | 文戏微表情六阶段 / 武戏 PREVIS 完播评分；★故事板图（面板链，动作相位七态拆格）· ★剧情分镜格（推演宫格）· 段内衔接 5 维 / 运镜 5 模式 |
+| ⚔️ **打戏** | 三大打戏引擎 | 通用打戏（`sd-combat`）· 玄幻仙侠（`sd-xuanhuan`）· 真人写实（`sd-real`）——分域专精，总控不持有打戏规则 |
+| 🚀 **提示词** | 七段式 + H3 支线 | 【画幅风格】→【场景资产】→【核心人物】→【站位声明】→【时间轴分镜】→【音效】→【强制禁止项】；选 H3 自动转 Ref2VA 六段式 |
+| 🚫 **禁令** | 禁令失效三改法 | 模型对否定不敏感、对词根敏感——高关联概念换词 / 主体优先句式 / 触发器移除；【强制禁止项】只装负面清单 |
+| ✅ **质检** | P0~P2 门禁 + 稿件级机检 | `validate_prompt.py` **C1~C26**（子检查码共 98 条，另设增量主码 C27~C30）/ **H1~H12**（`--model h3`）；投喂层另加**六道闸门**（`gate_check.py`） |
+| 🖥️ **看板** | 离线分镜看板 | 项目 md（唯一真相）→ 单文件 HTML，双击即开；可导出 SRT 字幕 / 剪辑时间线 CSV / API 载荷 JSON |
+| 🎵 **声音** | 后期音乐与声音设计 | BGM Cue Sheet / 音乐搜索词 / AI 音乐提示词 / 版权检查（`sd-qc-engine`） |
 | 🛡️ **合规** | 安全转译词典 | 把血腥/断肢类动作转译为「气浪震散 / 火花消散 / 重创定格」，降低平台风险（不承诺 100% 通过） |
 
 ## 🖥️ 适用平台与模型
@@ -99,76 +136,78 @@
 | | 支持 |
 |---|---|
 | **Agent 平台** | OpenClaw · WorkBuddy · 豆包智能体 / 扣子(Coze) · Dify 及通用 LLM（支持豆包 JSON 分块，防上下文截断） |
-| **视频模型** | **Seedance 2.5 / 2.0**（强制二选一，语法契约彻底分流）+ **MiniMax H3**（格式支线：只做七段式→H3 原生格式转换，单段 4–15s）；即梦为次选 / 历史兼容；可灵自 V6.8 起移出正式支持（LEGACY） |
+| **视频模型** | **Seedance 2.5 / 2.0**（强制二选一，语法契约彻底分流）+ **MiniMax H3**（格式支线：七段式 → H3 原生格式，单段 4–15s）；即梦为次选 / 历史兼容 |
 | **输出** | 七段式投喂提示词组（Seedance）· **H3 Ref2VA 六段式稿** · Canvas / API 结构化载荷 · 单文件离线分镜看板 · 情绪曲线图 |
 
 ---
 
 ## ⚙️ 快速开始
 
+> 📦 **部署（Multi-Agent 套装）**：本仓根目录**并列** 1 个总控（`short-drama-director/`）+ 12 个子技能（`sd-*-engine/`）。**支持多技能目录的平台（如 OpenClaw）把 13 个技能目录整体同级部署即可，主入口 = `short-drama-director`**；要求「zip 根即 `SKILL.md`」的单技能平台，请以 `short-drama-director/SKILL.md` 为主入口并把子技能**同级**补齐。
+
 ```bash
-# 安装到 OpenClaw
+# 安装到 OpenClaw（总控 + 12 子技能整体同级部署）
 openclaw skills install ./short-drama-director --as short-drama-director
 
-# 自检包完整性（41 模块静态 + 语义回归检查 ①~⑱ 组）
+# 包级自检（48 份规则库静态 + 语义回归）
 python3 short-drama-director/scripts/check_package.py
 
-# 出稿机检（FAIL 清零才交付）
-python3 short-drama-director/scripts/validate_prompt.py <稿>.md --model 2.5|2.0|h3
+# 出稿机检（FAIL 清零才交付；--model 2.5|2.0|h3，--track 1~4 按赛道分流）
+python3 short-drama-director/scripts/validate_prompt.py <稿>.md --model 2.5
+
+# 投喂层六道闸门（含素材形态一致性）
+python3 sd-feed-engine/scripts/gate_check.py <稿>.md
 
 # 项目 md → 单文件离线看板
 python3 short-drama-director/scripts/build_board_lite.py <项目.md>
-
-# 12 节拍情绪曲线
-python3 short-drama-director/scripts/generate_emotion_curve.py
 ```
 
-**给 AI 助手的最小执行序列**：读 `SKILL.md` → 完成 A/B（+多段任务 D）锁 → 定动作强度档（R1/R2/R3）→ 有对白先过语速自检 + 语气位 → 资产出图锁定 → 分镜 → 按 `★ prompt-feeding-checklist.md` 生成投喂词 → 跑 `validate_prompt.py` 机检 → 过 `quality-gate-review`
+**给 AI 助手的最小执行序列**：读 `SKILL.md` → 完成**六道锁**（〇·0 赛道 / 〇·1 素材来源 / A 模型 / B 画幅 / C 交付形态 / D 段缝）→ 定**动作强度档**（R1/R2/R3）→ 有对白先过语速自检 + 语气位 → 资产锁定 → 分镜 → 按 `★ prompt-feeding-checklist.md` 生成投喂词 → 跑 `validate_prompt.py` 机检 → 过 `quality-gate-review`。
 
 ### 🧮 常用指令
 
-`/写剧本` · `/拆资产` · `/资产图册` · `/角色资产板` · `/顶视图` · `/做分镜` · `/台词诊断` · `/语速自检` · `/微表情` · `/情绪曲线` · `/生成视频提示词` · **`/H3提示词`** · `/导出工作流参数` · `/看板` · `/审查` · `跳过确认，直接出整集`
+`/写剧本` · `/台词诊断` · `/数字资产包` · `/素材形态` · `/接线单` · `/做分镜` · `/语速自检` · `/生成视频提示词` · `/H3提示词` · `/导出工作流参数` · `/情绪曲线` · `/看板` · `/微表情` · `/审查` · `跳过确认，直接出整集`
 
-完整规则与指令路由见 [`short-drama-director/SKILL.md`](short-drama-director/SKILL.md)
+完整指令路由见 [`short-drama-director/SKILL.md`](short-drama-director/SKILL.md)
 
 ---
 
 ## 📦 项目结构
 
 ```
-lixiaoxiao9888-create/manju-laoli-skill/
-└── short-drama-director/              # V6.9.8 轻量版主包（49 文件 · 41 规则库）
-    ├── SKILL.md                       # 总控路由 + 工作法 + 模块索引（法则 0~25）
-    ├── references/                    # 41 部专业规则库
-    │   ├── asset-first-pipeline.md    #   Asset-First 六阶段（★流程权威）
-    │   ├── model-adapters.md          #   七段式主格式唯一权威定义 + 语气位/摆位/首镜锚定
-    │   ├── ★ h3-adapter.md            #   MiniMax H3 格式支线（★：两 checkpoint 路由/字段映射/9 张取材策略/H1~H12）
-    │   ├── aspect-ratio-adaptation.md #   画幅三选一锁定与全流程路由（★权威）
-    │   ├── segment-splicing.md        #   段缝衔接（D 锁：末态双保险/换机位/空镜）
-    │   ├── vo-os-weaving.md           #   旁白与独白视听编织（OS 声画分离红线）
-    │   ├── seedance-render-engine.md  #   时长预算 + 三层解耦
-    │   ├── ★ facs-micro-expression.md #   FACS 微表情引擎（★表情域权威）
-    │   ├── storyboard-board-lite.md   #   轻量离线分镜看板规范
-    │   ├── ★ prompt-feeding-checklist.md  # P4 投喂必查清单（★执行序列权威）
-    │   └── ... 共 41 模块
-    ├── scripts/
-    │   ├── check_package.py           # 静态 + 语义回归自检（①~⑱ 组）
-    │   ├── validate_prompt.py         # 稿件级投喂机检（C1~C20 / --model h3 → H1~H12）
-    │   ├── build_board_lite.py        # 分镜看板编译器（md → 单文件 HTML）
-    │   └── generate_emotion_curve.py  # 12 节拍情绪曲线绘图
-    └── README.md / LICENSE / CHANGELOG.md
+lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.20 多技能套装（154 文件）
+├── README.md                                   # 本落地页（中文 + English）
+├── LICENSE / .gitignore / assets/
+├── short-drama-director/                       # L0 总控（62 文件 · 48 份规则库 · 机检脚本）
+│   ├── SKILL.md                                #   总控路由 + 工作法 + 模块索引
+│   ├── references/                             #   48 份专业规则库（含 style-bible 画风锁知识库 10 份）
+│   ├── scripts/                                #   check_package / validate_prompt / gate 等机检全家桶
+│   └── README.md / LICENSE / CHANGELOG.md
+├── sd-decision-engine/                         # L1 决策层（情境映射 E01~E15）
+├── sd-recon-engine/                            # L2 生产层 · 素材采风
+├── sd-script-engine/                           # L2 · 剧本（国内剧 + 外来剧本润色）
+├── sd-overseas-engine/                         # L2 · 海外剧剧本（赛道②）
+├── sd-jieshuo-engine/                          # L2 · 解说叙事剧本（赛道③）
+├── sd-asset-engine/                            # L2 · 资产锁定
+├── sd-storyboard-engine/                       # L2 · 文戏分镜 + 故事板图
+├── sd-combat-engine/                           # L2 · 通用打戏
+├── sd-xuanhuan-engine/                         # L2 · 玄幻仙侠打戏
+├── sd-real-engine/                             # L2 · 真人写实打戏
+├── sd-feed-engine/                             # L3 交付层 · 投喂（六道闸门）
+└── sd-qc-engine/                               # L3 · 质检 / 连续性 / 声音设计
 ```
 
 ---
 
 ## 📜 更新历史
 
+- **V7.4.20 多技能套装版**（2026-10-15）— **架构升级为「多技能套装」**：1 总控 + 12 子技能 · 四层纵深（L0 总控 / L1 决策 / L2 生产 / L3 交付）；规则库扩至 **48 份**（含 `style-bible/` 画风锁知识库 10 份），全包 **154 文件**；**〇·0 赛道分流**（含赛道② 海外剧 · 赛道③ 解说叙事）与 **〇·1 素材来源**（对标采风）正交可组合；**素材形态 M0/M1/M2 +《素材接线单》**（本包不持有图）；新增 **★场面调度**（`blocking-direction`）· **★故事板图·面板链** · **剧情分镜格** · **场景空间事实五件事**；机检扩至 **C1~C26**（子检查码 98 条，另设增量主码 C27 对话戏节奏 / C28 台词机械化 / C29 资产状态偏离 / C30 外挂指纹与交接探针）、H3 支线 **H1~H12**；投喂层新增**六道闸门**（含素材形态一致性）
 - **V6.9.8 轻量版**（2026-09-20）— 新增 **MiniMax H3 格式支线**：A 锁并列第三选项，只做「七段式 → H3 原生格式」转换（`h3-adapter.md`：两 checkpoint 路由 / 六段式映射 / 素材上限 9 图·3 视频·3 音频·总 12 / 9 张取材策略 / 两套投喂载荷）；出稿机检新增 **H1~H12**（`--model h3`）
-- **V6.9.3 ~ V6.9.7 轻量版**（2026-09-19）— 五轮实拍复盘驱动的定向修订：**对白语气位**（C16）· **人物账连续·摆位必入画**（C17）· **首镜锚定·景别一致·姿态延续·视线指派**（C18）· **禁令失效三改法 + 栏目纪律**（C19 / C19e）· **首镜单主体锚定与具象化**（C20）· **示范句验证纪律**（⑰ 规则自洽门）；机检升至 C1~C20
-- **V6.9 轻量版**（2026-09-18）— 新增 **〇节 D·段缝衔接方式三选一锁**（末态双保险 / 换机位硬切 / 空镜过渡，治"段落间衔接生硬"）/ **旁白·独白视听编织规程**（篇幅卡口 · OS 声画分离红线 · VO 冷漠审视）/ **时长守恒·禁拉伸凑满**（法则 17 修订 + C15 门）
-- **V6.8 轻量版**（2026-09-15）— 可灵移出正式支持（降级 LEGACY）/ 角色资产统一 **4 View** / 「七段式」命名统一、末尾参数行废止 / 空间 S0~S4 · 资产 A0~A3 · FACS **三级按需触发** / 2.5 新增**任务模式二选一**（全能参考 · 首尾帧）
+- **V6.9.3 ~ V6.9.7 轻量版**（2026-09-19）— 五轮实拍复盘驱动的定向修订：**对白语气位**（C16）· **人物账连续·摆位必入画**（C17）· **首镜锚定·景别一致·姿态延续·视线指派**（C18）· **禁令失效三改法 + 栏目纪律**（C19 / C19e）· **首镜单主体锚定与具象化**（C20）· **示范句验证纪律**；机检升至 C1~C20
+- **V6.9 轻量版**（2026-09-18）— 新增 **〇节 D·段缝衔接方式三选一锁** / **旁白·独白视听编织规程**（OS 声画分离红线 · VO 冷漠审视）/ **时长守恒·禁拉伸凑满**
+- **V6.8 轻量版**（2026-09-15）— 可灵移出正式支持（降级 LEGACY）/ 角色资产统一 **4 View** / 空间 S0~S4 · 资产 A0~A3 · FACS **三级按需触发** / 2.5 新增**任务模式二选一**
 - **V6.7 轻量版**（2026-09-14）— 双锁同规格（模型版本 + 画幅三选一强制锁）/ 按官方文档校准 Seedance 2.5 / 吸收 FACS 微表情引擎三件套 / 吸收轻量离线分镜看板
-- **V6.5 Multi-Agent**（2026-09-01）— Asset-First 六阶段 + 多 Agent 平台适配 + Seedance 2.5 深度适配 + 静止段禁用铁律（AI 视频无静止表演能力，情绪蓄力必须在运动中完成）
+- **V6.5 Multi-Agent**（2026-09-01）— Asset-First 六阶段 + 多 Agent 平台适配 + Seedance 2.5 深度适配 + 静止段禁用铁律
 - 旧版归档：[**manju-laoli-skill-legacy**](https://github.com/lixiaoxiao9888-create/manju-laoli-skill-legacy)
 
 ---
@@ -179,19 +218,20 @@ lixiaoxiao9888-create/manju-laoli-skill/
 
 # 🇬🇧 English Overview
 
-## **V6.9.8 Lite** · Short-Drama Director Suite
+## **V7.4.20 Multi-Skill Suite** · Short-Drama Director Suite
 
-**An industrial, full-pipeline creation skill package for AIGC audiovisual works — from concept lock-in to video-model feed prompts — built for AI agents / LLMs to call directly.**
+**An industrial, full-pipeline creation skill package for AIGC audiovisual works — from concept lock-in to video-model feed prompts — built for AI agents / LLMs to call directly. One router + 12 sub-skills across a four-layer architecture.**
 
 ![Pipeline](https://img.shields.io/badge/Pipeline-Asset--First-6a5acd)
+![Structure](https://img.shields.io/badge/Structure-1%20router%20%7C%2012%20sub--skills-8e44ad)
 ![Models](https://img.shields.io/badge/Models-Seedance%202.5%20%7C%202.0%20%7C%20MiniMax%20H3-9d4edd)
-![QC](https://img.shields.io/badge/QC-C1~C20%20%7C%20H1~H12-ff6b6b)
+![QC](https://img.shields.io/badge/QC-C1~C26%20%7C%20H1~H12-ff6b6b)
 ![Platforms](https://img.shields.io/badge/Platforms-OpenClaw%20%7C%20Coze%20%7C%20Dify%20%7C%20WorkBuddy-00b4d8)
 
 ### 🎥 Production Pipeline
 
 ```
-📋 Lock-in → ✍️ Gated Screenwriting → 🎙️ Dialogue → 🖼️ Asset Locking → 🎬 Dual-mode Storyboard → 🚀 Prompt Packaging → ✅ QC → 🖥️ Offline Board
+📋 Lock-in → 🧭 Track routing → ✍️ Gated Screenwriting → 🖼️ Asset Locking → 🎬 Dual-mode Storyboard → 🚀 Prompt Packaging → ✅ QC → 🖥️ Offline Board
 ```
 
 </div>
@@ -200,121 +240,147 @@ lixiaoxiao9888-create/manju-laoli-skill/
 
 ## 🧭 What This Is
 
-An **AIGC creation rulebase for AI agents** (OpenClaw Skill / Agent skill package) — not a finished screenplay. Drop `SKILL.md` plus `references/` into your agent's skill directory.
+An **AIGC creation rulebase for AI agents** (OpenClaw Skill / Agent skill package). **As of V7.4.20 it is a multi-skill suite — 1 router** (`short-drama-director`) **+ 12 sub-skills** (`sd-*-engine`) **across four layers.**
+
+> **Core idea:** "**The user sees 5 steps; the AI runs 100 rules.**" The user only decides ① what to make ② where it comes from ③ model ④ aspect ratio ⑤ desired output — locks, routing, sub-skill mounting, and linting are all handled internally. Sub-skills are never called by hand.
 
 It turns AIGC audiovisual creation into a reusable industrial pipeline, solving three things:
 
-1. **No drift** — characters / scenes / props are **generated and locked as reference images first**, before any storyboard (**Asset-First**: asset images precede storyboards);
-2. **No rework** — mandatory front-end locks (model version / aspect ratio) + a pre-feed checklist + independent P0–P2 gates + **shot-level machine QC** stop errors before generation;
-3. **Feed-ready** — outputs a structured **7-section** prompt you can copy straight into the video model; when **MiniMax H3** is selected, it converts automatically into H3's native 6-section format.
+1. **No drift** — characters / scenes / props are **locked first, then storyboarded** (Asset-First);
+2. **No rework** — **six front-end locks + a pre-feed checklist + independent P0–P2 gates + shot-level lint** stop errors before generation;
+3. **Feed-ready** — outputs a structured **7-section** prompt you can copy straight into the video model; **MiniMax H3** selection auto-converts it into H3's native 6-section format.
+
+> 🔑 **The package holds no images**: it delivers "**prompts + a wiring sheet**". Images are generated and held by the user on external platforms. Assets are graded by **existence form** — **M0 prompt-only / M1 numbered slots (default) / M2 registered** — declared on the first line of every delivery.
 
 ## 🎯 Use Cases
 
-The pipeline is genre-agnostic: anything that goes **script → storyboard → video-model feed** fits.
+Genre-agnostic: anything that goes **script → storyboard → video-model feed** fits.
 
 - **AI short dramas / animated shorts / short-form series** (the densest use case)
 - **AI commercials / brand films / concept films**
-- **Storyboard previsualization (PREVIS)**
-- **Action & fight choreography design** (modern combat, wuxia, xianxia, anime, sci-fi)
+- **Storyboard previsualization (PREVIS)** · **action & fight choreography design**
+- **History / science explainer narration** (track ③, `sd-jieshuo-engine`)
+- **Overseas drama / multi-language / dialect** (track ②, `sd-overseas-engine`)
 - **Emotional & micro-expression work** (FACS expression engineering)
 - Any AI video production needing **cross-shot character consistency**
 
-> Genres: modern urban / period wuxia / fantasy xianxia / mystery / sci-fi / cyberpunk / ink-wash guoman — including six cinematic audiovisual aesthetic presets.
+## 🧩 Four-Layer Architecture (1 router + 12 sub-skills)
+
+| Layer | Skill | Role |
+|:---:|:---|:---|
+| **L0 Router** | `short-drama-director` | Track routing · material sourcing · **asset existence form M0/M1/M2** · lock system · **48 rulebooks** (incl. 10 in `style-bible/`) · 7-section & H3 formats · lint **C1~C26** (+ incremental C27–C30) · P0–P2 gates · ★blocking direction · ★asset-delivery modes |
+| **L1 Decision** | `sd-decision-engine` | Situation mapping E01–E15 + 80/15/5 weight + emotional anchors + composition minefield whitelist — answers "what shot should this scene use?" |
+| **L2 Production** | `sd-recon-engine` | Reference sourcing & benchmark intel (delivers only a 《Benchmark Card》) |
+| | `sd-script-engine` | Screenwriting & novel adaptation (6-stage chain + 5-seat roundtable review + 7-dimension dialogue diagnosis + humanizing engine + external-script polish layer) |
+| | `sd-overseas-engine` | Track ② overseas-drama scriptwriting (language & style contract · 3-level calibration · North-American English adaptation) |
+| | `sd-jieshuo-engine` | Track ③ explainer-narration scriptwriting (VO Script · 4.5–6.5 chars/s) |
+| | `sd-asset-engine` | Asset locking (3 checklists · scene continuity · prop single-instance lock · crowd direction) |
+| | `sd-storyboard-engine` | Drama/日常 storyboarding (★storyboard sheet · plot-deduction grid · in-segment linking) |
+| | `sd-combat-engine` | General fight storyboarding |
+| | `sd-xuanhuan-engine` | Xianxia/fantasy fight (golden granularity · bidirectional offense · closed-loop endings) |
+| | `sd-real-engine` | Live-action fight (R1 restrained tier · 11-link power chain · real combat techniques) |
+| **L3 Delivery** | `sd-feed-engine` | Output modes A/B/C + **six gates** (gate 6 = numbering + asset-form consistency) + material mapping + 《wiring sheet》 + multi-segment joining |
+| | `sd-qc-engine` | Final QC & continuity (consistency ledger · editing/transitions · sound design · music & BGM cue sheet · lint) |
+
+## 🔒 Six Front-End Locks + Style Lock (all must be offered for the user to choose)
+
+| Lock | Options | Note |
+|:---:|:---|:---|
+| **〇·0 Track** | ① domestic ② overseas ③ explainer ④ other | The zero-th lock; ② mounts `sd-overseas-engine`, ③ mounts `sd-jieshuo-engine` |
+| **〇·1 Sourcing** | ① original ② adaptation ③ benchmark ④ trend | Orthogonal to 〇·0; ③④ mount `sd-recon-engine` |
+| **A Model** | Seedance 2.5 / 2.0 / MiniMax H3 branch | Choose one; syntax contracts split fully |
+| **B Aspect ratio** | 16:9 / 9:16 / 21:9 | Locked together with the model version |
+| **C Delivery form** | ① offline board ② md ③ both | ★ Mandatory; unspecified = stop and ask |
+| **D Seam joining** | ① held end-frame ② camera swap ③ empty shot ④ creative transition | Four-way choice for multi-segment work |
+| **I Style** | pick from a candidate card (incl. "go with your recommendation") | Style card frozen once chosen |
+
+> ⚠️ If any lock is unspecified, the system **must stop and offer the options** — no skipping, no inferring. Action-intensity tiers: `R1 restrained` / `R2 commercial (default)` / `R3 fantasy`.
 
 ## 🔥 Capabilities
 
 | Stage | Capability | Description |
 |:---:|:---|:---|
-| 📋 **Lock-in** | Mandatory front-end locks | Model version (**choose one**: Seedance 2.5 / Seedance 2.0 / **MiniMax H3 format branch**) + aspect ratio (16:9 / 9:16 / 21:9) + seam-joining mode for multi-segment work — no work starts without them |
-| ✍️ **Script** | 5-stage gated engine | Premise → Structure → Beat → Entity → Page; three-act structure, causal beat sheet, professional script page |
-| 📈 **Emotion** | 12-beat curve | Full-episode tension on a 0–10 scale + chart script; peak/valley and 9th-beat reversal validation |
-| 🎙️ **Dialogue** | 7-dimension diagnosis + speed check + **tone slot** | Three speed tiers (3.5–5 chars/s baseline), long-line shot splitting, punchline breathing room; **the third element of dialogue (HOW THEY SOUND)** — every line is written as `台词：【角色（语气）："…"】`, mandatory for both 2.0 and 2.5 |
-| 🖼️ **Assets** | Asset-First digital asset pack | Character **4-View sheets** (10 facial + 6 material items) / 3-piece scene maps / prop sheets; 《Asset Ledger》 CHR/AUD/PRP/SCN/Uxx; A/B/C grading, A0–A3 dependency triggering |
-| 🎥 **Space** | One-line stance + grading | Stance declaration (position / anchor / facing / pose) + axis lock + movement chains; S0–S4 grading; 180° rule; **placement must appear on screen** (anyone placed in the stance block must be covered by at least one shot, else marked as exiting) |
-| 🎬 **Storyboard** | Dual-mode + first-shot anchoring | Drama: 6-stage micro-expression progression / Action: 15s PREVIS completion scoring (R1 realistic · R2 commercial · R3 fantasy) + 15 camera rules + 3-technique / 6-form transitions; **first-shot anchoring / consistent shot size / pose carry-over / gaze assignment**, plus **single-subject anchoring** (no "X and Y in the same frame" phrasing) |
-| 😀 **Performance** | FACS micro-expression engine | Emotions as Action Units: 4-zone breakdown + 3 intensity tiers + real-vs-fake smile rule + emotion→AU recipes & AU dictionary (on-demand module) |
-| ⚔️ **Libraries** | Martial arts / fantasy | 23 schools + 9 sword forms + weapons + lightness skills + 11 finisher links; fantasy spell combat R3 |
-| 🚀 **Prompts** | 7-section main format + **H3 branch** | 【Style】→【Scene Asset】→【Characters】→【Stance】→【Timeline Storyboard】→【SFX】→【Hard Negatives】; 2.5 uses official sound chars + Hit-Stop + task-mode choice; **selecting H3 converts it into Ref2VA's six sections** |
-| 🚫 **Negatives** | Three rewrites for failed bans | Video models are insensitive to negation but sensitive to word roots — a banned concept's root still renders even with "no/never" attached; the negatives block holds only negative lists, never positive execution instructions |
-| ✅ **QC** | P0–P2 gates + shot-level lint | Duration / dialogue / axis / aspect / anchor consistency + 3-layer audio levels + mandatory 3-step re-verification after edits; `validate_prompt.py` runs **C1–C20** (Seedance) / **H1–H12** (H3, `--model h3`) |
-| 🖥️ **Board** | Offline storyboard board | Project md (single source of truth) → single-file HTML, double-click to open |
-| 🛡️ **Compliance** | Safety translation dictionary | Rewrites gore/amputation into shockwave / spark / freeze-frame language to lower platform risk (no 100% guarantee) |
+| 🧭 **Track** | 〇·0 routing | Domestic / overseas / explainer / other, with per-track rule sets and speed standards |
+| 📥 **Recon** | Benchmark intel | Tiered sources · 4-step recon · 13-field 《Benchmark Card》 · six evidence disciplines |
+| ✍️ **Script** | 6-stage chain | Sourcing → IP & characters → dev bible → episode planning → script → 5-seat review |
+| 📈 **Emotion** | 12-beat curve | Tension 0–10 + chart script |
+| 🎙️ **Dialogue** | 7-dim + speed + tone | Structured `台词：【角色（语气）："…"】` for both 2.0 and 2.5 |
+| 🖼️ **Assets** | Asset-First pack | Character/scene/prop assets · CHR/AUD/PRP/SCN/Uxx ledger · A0–A3 triggering |
+| 🎥 **Space** | Stance line + grading | 4-element stance declaration + axis lock + movement chains; S0–S4 |
+| 🎬 **Storyboard** | Dual-mode + sheets | Dialogue micro-expression / action PREVIS; ★storyboard sheet · deduction grid |
+| ⚔️ **Fight** | Three engines | General / xianxia / live-action — domain-specialized |
+| 🚀 **Prompts** | 7-section + H3 | 【Style】→…→【Hard Negatives】; H3 auto-converts to Ref2VA six sections |
+| 🚫 **Negatives** | Three rewrites | Models are insensitive to negation, sensitive to word roots |
+| ✅ **QC** | Gates + lint | `validate_prompt.py` **C1~C26** (98 sub-codes; incremental C27–C30) / **H1–H12**; feed-layer **six gates** |
+| 🖥️ **Board** | Offline storyboard | Project md → single-file HTML; export SRT / timeline CSV / API JSON |
+| 🎵 **Sound** | Music & sound design | BGM cue sheet / search terms / AI music prompts / copyright check |
+| 🛡️ **Compliance** | Safety dictionary | Rewrites gore into shockwave / spark / freeze-frame language |
 
 ## 🖥️ Platforms & Models
 
 | | Support |
 |---|---|
-| **Agent platforms** | OpenClaw · WorkBuddy · Doubao Agent / Coze · Dify, plus generic LLMs (Doubao JSON chunking supported) |
-| **Video models** | **Seedance 2.5 / 2.0** (mandatory choice, fully split syntax contracts) + **MiniMax H3** (format branch: 7-section → H3 native format, 4–15s per segment); Jimeng = secondary / legacy; Kling dropped to LEGACY as of V6.8 |
-| **Outputs** | 7-section feed prompt sets (Seedance) · **H3 Ref2VA six-section scripts** · Canvas / API payloads · single-file offline storyboard board · emotion curve chart |
+| **Agent platforms** | OpenClaw · WorkBuddy · Doubao Agent / Coze · Dify, plus generic LLMs |
+| **Video models** | **Seedance 2.5 / 2.0** (mandatory choice) + **MiniMax H3** (format branch, 4–15s per segment); Jimeng = secondary / legacy |
+| **Outputs** | 7-section feed prompts (Seedance) · **H3 Ref2VA six-section scripts** · Canvas / API payloads · offline board · emotion curve |
 
 ---
 
 ## ⚙️ Quick Start
 
+> 📦 **Deploy (multi-agent suite):** the repo root holds 1 router (`short-drama-director/`) + 12 sub-skills (`sd-*-engine/`) side by side. On multi-skill platforms (e.g. OpenClaw) deploy all 13 directories at the same level; the main entry is `short-drama-director`.
+
 ```bash
 # Install into OpenClaw
 openclaw skills install ./short-drama-director --as short-drama-director
 
-# Lint package integrity (41-module static + semantic regression, groups ①~⑱)
+# Package lint (48 rulebooks, static + semantic regression)
 python3 short-drama-director/scripts/check_package.py
 
-# Shot-level feed lint (zero FAIL to ship)
-python3 short-drama-director/scripts/validate_prompt.py <script>.md --model 2.5|2.0|h3
+# Shot-level feed lint (zero FAIL to ship; --model 2.5|2.0|h3, --track 1~4)
+python3 short-drama-director/scripts/validate_prompt.py <script>.md --model 2.5
+
+# Feed-layer six gates (incl. asset-form consistency)
+python3 sd-feed-engine/scripts/gate_check.py <script>.md
 
 # Project md → single-file offline board
 python3 short-drama-director/scripts/build_board_lite.py <project.md>
-
-# 12-beat emotion curve
-python3 short-drama-director/scripts/generate_emotion_curve.py
 ```
 
-**Minimal agent sequence**: read `SKILL.md` → complete A/B (and D for multi-segment) locks → pick action tier (R1/R2/R3) → run the dialogue speed check + tone slot if there is dialogue → lock assets → storyboard → generate feed prompts via `★ prompt-feeding-checklist.md` → pass `validate_prompt.py` → pass `quality-gate-review`
-
-### 🧮 Commands
-
-`/写剧本` · `/拆资产` · `/资产图册` · `/角色资产板` · `/顶视图` · `/做分镜` · `/台词诊断` · `/语速自检` · `/微表情` · `/情绪曲线` · `/生成视频提示词` · **`/H3提示词`** · `/导出工作流参数` · `/看板` · `/审查` · `跳过确认，直接出整集`
-
-Full rules & routing: [`short-drama-director/SKILL.md`](short-drama-director/SKILL.md)
-
----
+**Minimal agent sequence**: read `SKILL.md` → complete the **six locks** → pick action tier (R1/R2/R3) → dialogue speed check + tone slot → lock assets → storyboard → generate feed prompts → pass `validate_prompt.py` → pass `quality-gate-review`.
 
 ## 📦 Structure
 
 ```
-lixiaoxiao9888-create/manju-laoli-skill/
-└── short-drama-director/              # V6.9.8 Lite main package (49 files · 41 rulebooks)
-    ├── SKILL.md                       # Router + working method + module index (laws 0–25)
-    ├── references/                    # 41 professional rulebooks
-    │   ├── asset-first-pipeline.md    #   Asset-First 6 stages (★flow authority)
-    │   ├── model-adapters.md          #   7-section format authority + tone/placement/first-shot anchoring
-    │   ├── ★ h3-adapter.md            #   MiniMax H3 format branch (★: 2-checkpoint routing / field mapping / 9-image sourcing / H1–H12)
-    │   ├── aspect-ratio-adaptation.md #   Aspect-ratio locking & routing (★)
-    │   ├── segment-splicing.md        #   Segment-seam joining (D-lock: end-state twin insurance / camera swap / empty shot)
-    │   ├── vo-os-weaving.md           #   Narration & inner-monologue weaving (OS audio-visual split rule)
-    │   ├── seedance-render-engine.md  #   Duration budget + 3-layer decoupling
-    │   ├── ★ facs-micro-expression.md #   FACS engine (★expression authority)
-    │   ├── storyboard-board-lite.md   #   Offline board spec
-    │   ├── ★ prompt-feeding-checklist.md  # P4 pre-feed checklist (★sequence authority)
-    │   └── ... 41 modules total
-    ├── scripts/
-    │   ├── check_package.py           # Static + semantic regression lint (groups ①~⑱)
-    │   ├── validate_prompt.py         # Shot-level feed lint (C1–C20 / --model h3 → H1–H12)
-    │   ├── build_board_lite.py        # Board compiler (md → single-file HTML)
-    │   └── generate_emotion_curve.py  # 12-beat emotion curve chart
-    └── README.md / LICENSE / CHANGELOG.md
+lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.20 multi-skill suite (154 files)
+├── README.md                                   # landing (Chinese + English)
+├── LICENSE / .gitignore / assets/
+├── short-drama-director/                       # L0 router (62 files · 48 rulebooks · lint scripts)
+├── sd-decision-engine/                         # L1 decision (E01–E15)
+├── sd-recon-engine/                            # L2 · sourcing
+├── sd-script-engine/                           # L2 · scriptwriting
+├── sd-overseas-engine/                         # L2 · overseas script (track ②)
+├── sd-jieshuo-engine/                          # L2 · explainer script (track ③)
+├── sd-asset-engine/                            # L2 · asset locking
+├── sd-storyboard-engine/                       # L2 · storyboard + storyboard sheets
+├── sd-combat-engine/                           # L2 · general fight
+├── sd-xuanhuan-engine/                         # L2 · xianxia fight
+├── sd-real-engine/                             # L2 · live-action fight
+├── sd-feed-engine/                             # L3 delivery · feed (six gates)
+└── sd-qc-engine/                               # L3 · QC / continuity / sound
 ```
 
 ---
 
 ## 📜 Changelog
 
-- **V6.9.8 Lite** (2026-09-20) — adds the **MiniMax H3 format branch**: a third option at the A-lock that only converts the 7-section script into H3's native format (`h3-adapter.md`: 2-checkpoint routing / six-section mapping / material caps of 9 images · 3 videos · 3 audios · 12 files total / 9-image sourcing strategy / two feed payloads); shot-level lint gains **H1–H12** (`--model h3`)
-- **V6.9.3 – V6.9.7 Lite** (2026-09-19) — five rounds of revisions driven by real shoot retros: **dialogue tone slot** (C16) · **placement must appear on screen** (C17) · **first-shot anchoring / shot-size consistency / pose carry-over / gaze assignment** (C18) · **three rewrites for failed bans + negatives-block discipline** (C19 / C19e) · **first-shot single-subject anchoring and concreteness** (C20) · **exemplar validation discipline** (⑰ self-consistency gate); lint raised to C1–C20
-- **V6.9 Lite** (2026-09-18) — adds the **D-lock: three ways to join segments** (end-state twin insurance / camera swap / empty shot), the **narration & inner-monologue weaving spec** (length quota · OS audio-visual split · detached VO gaze) and **duration conservation / no stretching to fill** (law 17 revised + gate C15)
-- **V6.8 Lite** (2026-09-15) — Kling demoted to LEGACY / character assets unified to **4 Views** / "7-section" naming unified, end-of-prompt parameter line abolished / space S0–S4 · asset A0–A3 · FACS **three-level on-demand triggering** / 2.5 gains **task-mode choice**
-- **V6.7 Lite** (2026-09-14) — dual locks at equal weight / Seedance 2.5 calibrated against official docs / FACS engine absorbed / lightweight offline board absorbed
-- **V6.5 Multi-Agent** (2026-09-01) — Asset-First 6 stages + multi-agent platform adapters + Seedance 2.5 deep adaptation + no-static-scene iron rule
+- **V7.4.20 Multi-Skill Suite** (2026-10-15) — **architecture upgraded to a multi-skill suite**: 1 router + 12 sub-skills across four layers; rulebooks grow to **48** (incl. 10 in `style-bible/`), **154 files** total; **〇·0 track routing** (overseas ② · explainer ③) and **〇·1 sourcing** (benchmark recon) orthogonal; **asset existence form M0/M1/M2 + wiring sheet** (no images held); new ★blocking direction · ★storyboard sheets · plot-deduction grid · scene-spatial facts; lint extended to **C1~C26** (98 sub-codes; incremental C27–C30) and H3 **H1–H12**; feed layer gains **six gates** (incl. asset-form consistency)
+- **V6.9.8 Lite** (2026-09-20) — adds the **MiniMax H3 format branch**; shot-level lint gains **H1–H12** (`--model h3`)
+- **V6.9.3 – V6.9.7 Lite** (2026-09-19) — five rounds of retro-driven revisions; lint raised to C1–C20
+- **V6.9 Lite** (2026-09-18) — D-lock three-way seam joining · narration/inner-monologue weaving · duration conservation
+- **V6.8 Lite** (2026-09-15) — Kling demoted to LEGACY / 4-View assets / S0–S4 · A0–A3 · FACS on-demand / 2.5 task modes
+- **V6.7 Lite** (2026-09-14) — equal-weight dual locks / Seedance 2.5 calibrated / FACS + offline board absorbed
+- **V6.5 Multi-Agent** (2026-09-01) — Asset-First 6 stages + multi-agent adapters
 - Legacy archive: [**manju-laoli-skill-legacy**](https://github.com/lixiaoxiao9888-create/manju-laoli-skill-legacy)
 
 ---

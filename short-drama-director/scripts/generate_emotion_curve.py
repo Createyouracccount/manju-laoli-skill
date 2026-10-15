@@ -14,8 +14,15 @@ import argparse
 import json
 import os
 import sys
-import matplotlib
-import matplotlib.pyplot as plt
+
+# matplotlib 为可选依赖（缺依赖给安装指引，不抛裸 Traceback）
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("[-] 缺少依赖：本脚本需要 matplotlib 才能出图。安装：pip install matplotlib")
+    print("    （不影响包内其余机检与投喂链路——情绪曲线为可选交付物，节拍数据仍可按 12 节拍手写进投喂稿）")
+    sys.exit(2)
 
 # ── 中文字体检测与配置（macOS/常见 Linux 路径回退）──
 def _setup_cjk_font():
