@@ -5393,6 +5393,10 @@ def finalize_checks(text, issues, warns, *, delivery=None, contract=False,
     project_doc = bool(re.search(r"^#{1,3}\s+", text, re.M)) and len(text) > 1500
     if delivery is not None or contract or project_doc:
         try:
+            import sys as _sys, os as _os
+            _sdir = _os.path.dirname(_os.path.abspath(__file__))
+            if _sdir not in _sys.path:
+                _sys.path.insert(0, _sdir)
             import audit_contract as ac
             ci, cw, _ = ac.audit_markdown(
                 text, mode="full", director=director, delivery=delivery)

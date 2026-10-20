@@ -9,6 +9,18 @@
 > `_skill_backups/sd-changelog-archive-20261014/CHANGELOG_HISTORY_ARCHIVE.md`。
 > 需要查早期某版改了什么 → 到该归档文件检索；**不要**把归档内容拷回本文件。
 
+## 2026-10-20 · V7.4.28：P4.5 接入机检（check_p45.py）
+
+> 粉丝反馈：P4.5 出的时候不走机检，导致内容不对、少东西。
+
+- **新增 `sd-storyboard-engine/scripts/check_p45.py`**：9 条规则（P450~P458）——段结构四件套 / 格数声明与实际一致 / 每格六问 / 术语污染 / 占位与跨格引用 / M0-M1 图片声明 / 段覆盖 / 交付清单行；`--segments N` 对齐投喂稿段数；`--m2` 放开看图表述；`--self-test` 内置 6 例。
+- **`p45-previs-storyboard.md` §七 边界改写**：从「本附件不参与机检」改为「**必须过 P4.5 专用机检，FAIL 清零才交付**；不替代 P5 投喂稿机检」；新增 **§八 机检门**。
+- **挂载同步**：总控 `SKILL.md` P4.5 三处（§C / 管线表 / 路由表）、`sd-storyboard-engine/SKILL.md` 索引、`sd-qc-engine/references/machine-check-manual.md` §九。
+- **附带修复**：alidate_prompt.py 的 C31 契约检查在 PYTHONSAFEPATH / 包装器 cwd 下 import audit_contract 失败（连带 compile_feed.py --self-test FAIL）——改为显式把脚本目录加入 sys.path 再导入。
+- 版本号 7.4.27 → 7.4.28；全包文件数 166 → 167（新增检查脚本）。
+
+---
+
 ## 2026-10-20 · V7.4.27：P4.5 预演故事板升为「交付标配 · 默认必出」
 
 > 用户裁定：交付最后必须出 4.5 故事板，不再作为可选附件。

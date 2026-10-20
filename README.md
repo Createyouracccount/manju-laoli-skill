@@ -2,17 +2,17 @@
 
 # 🎬 漫剧老李 AIGC 创作全流程 Skill
 
-## **V7.4.27 多技能套装版** · Short-Drama Director Suite
+## **V7.4.28 多技能套装版** · Short-Drama Director Suite
 
-> **版本**：V7.4.27 多技能套装版（Suite）· **现行唯一版本口径**
+> **版本**：V7.4.28 多技能套装版（Suite）· **现行唯一版本口径**
 
 > 🎨 面向 **AIGC 视听创作** 的工业级全流程技能包（**1 总控 + 12 子技能 · 四层纵深**）
 > 从创意立项、剧本、资产、分镜到视频模型投喂提示词与独立质检 —— 给 AI 助手 / LLM 直接调用
 
-![Version](https://img.shields.io/badge/版本-V7.4.27--套装版-6a5acd)
+![Version](https://img.shields.io/badge/版本-V7.4.28--套装版-6a5acd)
 ![Structure](https://img.shields.io/badge/结构-1%20总控%20%7C%2012%20子技能-8e44ad)
 ![Rulebooks](https://img.shields.io/badge/规则库-50%20份-00b4d8)
-![Files](https://img.shields.io/badge/文件-166-2ec4b6)
+![Files](https://img.shields.io/badge/文件-167-2ec4b6)
 ![Models](https://img.shields.io/badge/模型-Seedance%202.5%20%7C%202.0%20%7C%20MiniMax%20H3-9d4edd)
 ![QC](https://img.shields.io/badge/机检-C1~C32%20%7C%20H1~H12-ff6b6b)
 ![Platform](https://img.shields.io/badge/平台-OpenClaw%20%7C%20Coze%20%7C%20Dify%20%7C%20WorkBuddy-ff9f43)
@@ -179,7 +179,7 @@ python3 short-drama-director/scripts/build_board_lite.py <项目.md>
 ## 📦 项目结构
 
 ```
-lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.27 多技能套装（166 文件）
+lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.28 多技能套装（167 文件）
 ├── README.md                                   # 本落地页（中文 + English）
 ├── LICENSE / .gitignore
 ├── short-drama-director/                       # L0 总控（62 文件 · 50 份规则库 · 机检脚本）
@@ -205,6 +205,7 @@ lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.27 多技能套装（166 
 
 ## 📜 更新历史
 
+- **V7.4.28**（2026-10-20）— **P4.5 接入机检**：新增 `sd-storyboard-engine/scripts/check_p45.py`（P450~P458），验段结构四件套 / 格数声明与实际一致 / 每格六问 / 术语污染 / 占位引用 / M0-M1 图片声明 / 段覆盖 / 交付清单行；`p45` 边界从「本附件不参与机检」改为「**必须过 P4.5 专用机检，FAIL 清零才交付**」；总控与 QC 手册同步挂载。
 - **V7.4.27**（2026-10-20）— **P4.5 预演故事板升为「交付标配 · 默认必出」**：主交付（投喂稿 md / 看板）出完后，**默认另附一份 `{项目名}-预演故事板.md`**，不再等用户点名或「场景复杂」判定；仅「单镜过场 / 纯空镜 / 纯字幕段」「用户明确说不用」「尚未进入 P4 交付」三种情况可免，且**必须在交付清单写明理由，⛔ 禁静默跳过**；分段默认逐段全附，长剧可只附复杂段但须列明范围。同步改 `p45` §一、总控 `SKILL.md` §C / C·补 / 管线表 / 路由表、`delivery-pitfalls.md`；P4.5 仍是**只出提示词、不出图**（M0/M1），不入册、不占参考图槽。
 - **V7.4.25**（2026-10-19）— **交付层与门禁实战回写**：以《兽瞳》第01集全流程实跑为样本，修四类反复踩到的坑——① **交付件数失控**（单集曾产出 15 文件/10 目录）：定死「对外最多 3 件」（主文档 / 看板 / P4.5），md 正文只放资产提示词 + 分镜提示词，其余归 `_内部_` 前缀的内部档案，命名全中文；② **资产提示词结构性缺陷**：新增 `scripts/check_asset_blocks.py` 门禁（A1 跨条引用「同上/同规格/见母版/同图N」、A2 16:9、A3 九宫格八字段、A4·A5 角色四格与「主图」旧称致 5 格、A6 道具四格字段名），P2 出稿 FAIL 清零；③ **机检口径失真**：`validate_prompt.py` 新增 `--by-segment`，多段稿逐段独立判据——整份送检会把 3×30s 累计成 90s 一段，误判打戏档触发 C21/C22 并让 C10/C15 失真；④ 新增 `references/delivery-pitfalls.md`（交付翻车清单）与 P4「段级红线八条」（特写≥25% / 单镜≤6s / 机位不重复 / C32 背景光线写在台词前 / 运镜词表 / 人数肯定句 / 段内镜号从镜1 起 / 段缝换景别）。创作知识层（剧本、表演、打戏、画风）未改动。
 - **V7.4.23**（2026-10-16）— **粉丝排查报告核验 + 全包「文档法定词 × 机检词表」审计全修**：粉丝（Claude / Codex）报告指 `camera-specs-15rules.md` §二 法定运镜「**命中瞬间定格（Hit-Stop）**」未入机检词表 `CAM_FAMILIES` → **照文档写必报 C18g 假错**，且为规避该误报改写成「固定」的执行者又被 **C22c** 报"缺顿"（两门夹杀、无合规写法）。**逐条端到端复现，属实**。核验中把该根因**推广到全包反向核对**，另查出 **25 个词解析为空集**（定格族 11 词 + `环移` + 模式F 运镜库 7 词 + 焦点纵深拉移…），并修 **2 处 V7.4.21 本轮引入的缺陷**：① **C32 与「光影单一基准」教义互锁夹杀**（教义要求「时段光影立【场景资产】为唯一基准、镜行只写增量」，C32 却逐镜索要光线方向）→ 改**段级继承口径**（段内有基准则逐镜只判背景）；② **`BG_ELEM_RE` 过窄**（「脚下泥土犁出两道浅沟，竹叶被气浪掀飞」被漏判成"无背景"）→ 补自然环境元素 + 环境行为词。另修 `model-adapters.md` 两节**重复编号 5.0.5**（光影单一基准改 **§5.0.5b**）、新增 **`◑17` 全包零语法告警门**。⚠️ **V7.4.21 的交付 zip 请勿推送**（含上述 C32 互锁），以 V7.4.25 为准
@@ -226,7 +227,7 @@ lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.27 多技能套装（166 
 
 # 🇬🇧 English Overview
 
-## **V7.4.27 Multi-Skill Suite** · Short-Drama Director Suite
+## **V7.4.28 Multi-Skill Suite** · Short-Drama Director Suite
 
 **An industrial, full-pipeline creation skill package for AIGC audiovisual works — from concept lock-in to video-model feed prompts — built for AI agents / LLMs to call directly. One router + 12 sub-skills across a four-layer architecture.**
 
@@ -360,7 +361,7 @@ python3 short-drama-director/scripts/build_board_lite.py <project.md>
 ## 📦 Structure
 
 ```
-lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.27 multi-skill suite (166 files)
+lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.28 multi-skill suite (167 files)
 ├── README.md                                   # landing (Chinese + English)
 ├── LICENSE / .gitignore
 ├── short-drama-director/                       # L0 router (62 files · 48 rulebooks · lint scripts)
@@ -382,6 +383,7 @@ lixiaoxiao9888-create/manju-laoli-skill/        # V7.4.27 multi-skill suite (166
 
 ## 📜 Changelog
 
+- **V7.4.28** (2026-10-20) — **P4.5 now goes through machine check**: new `sd-storyboard-engine/scripts/check_p45.py` (P450–P458) validates segment structure, declared-vs-actual panel counts, the six questions per panel, terminology leakage, placeholder references, M0/M1 image claims, segment coverage, and the delivery checklist line. The P4.5 boundary changes from "not machine-checked" to "**must pass the dedicated P4.5 gate; zero FAIL to ship**". Router and QC manual updated.
 - **V7.4.27** (2026-10-20) — **P4.5 previs storyboard promoted to "delivery standard · always emitted"**: after the main deliverable (feed md / board), the skill **always attaches `{project}-预演故事板.md` by default** — no longer waiting for the user to ask or for a "complex scene" verdict. Exemptions: single-shot transition / pure empty shot / pure subtitle segment, the user explicitly saying no, or delivery not yet reaching P4 — and **any exemption must be stated with a reason in the delivery checklist; ⛔ no silent skip**. Segments are attached per-segment by default; long series may attach only complex segments but must list the range. Updated: `p45` §1, router `SKILL.md` §C / C-supplement / pipeline / route tables, and `delivery-pitfalls.md`. P4.5 remains **prompt-only, no images** (M0/M1), not registered, no reference-slot usage.
 - **V7.4.25** (2026-10-19) — **delivery-layer and gate hardening, written back from a real run**: based on a full pipeline run of episode 1, four recurring failure classes are fixed — ① **deliverable explosion** (one episode once produced 15 files / 10 folders): hard cap of three external artifacts (main doc / board / P4.5), the md body keeps only asset prompts and shot prompts, everything else moves to `_内部_` internal archives, and all names are localized; ② **structural asset-prompt defects**: new `scripts/check_asset_blocks.py` gate (A1 cross-references such as "same as above / see master / same as image N", A2 16:9, A3 the nine-grid eight fields, A4/A5 four-panel character boards and the retired "main image" wording that yields five panels, A6 prop four-panel field names), FAIL-free before P3; ③ **validation granularity**: `validate_prompt.py --by-segment` validates each 30s segment independently — whole-file parsing stacks 3x30s into one 90s block, mis-classifies it as a combat script (C21/C22) and skews C10/C15; ④ new `references/delivery-pitfalls.md` plus eight per-segment red lines in P4. The creative knowledge layer is unchanged.
 - **V7.4.23** (2026-10-16) — **fan-report verification + suite-wide "doc-legal-word × lint-table" audit pass**: a fan report (Claude / Codex) showed that the camera-movement word 「命中瞬间定格」/ Hit-Stop — *legalized* by `camera-specs-15rules.md` §2 — was absent from the lint table `CAM_FAMILIES`, so **writing it exactly as the docs prescribe raised a false C18g**, while the workaround (rewriting it as 「固定」/ static) got flagged by **C22c** for "missing beat" — a two-gate squeeze with no compliant form. **Reproduced end-to-end; confirmed real.** Generalizing the root cause across the package surfaced **25 more words that resolve to an empty family** (11 hit-stop words + `环移` + 7 mode-F library words + focus-pull …), and fixed **2 defects introduced by V7.4.21 itself**: ① **C32 vs. the single-light-baseline doctrine** (the doctrine says the segment's 时段光影 is the *only* baseline and shot lines carry deltas only, while C32 demanded light direction *per shot*) → switched to a **segment-level inheritance rule**; ② **`BG_ELEM_RE` too narrow** ("脚下泥土犁出两道浅沟，竹叶被气浪掀飞" judged as *no background*) → widened with natural elements and environment-action verbs. Also fixed the **duplicate heading `5.0.5`** in `model-adapters.md` (light baseline → **§5.0.5b**) and added a **`◑17` zero-syntax-warning gate**. ⚠️ **Do not push the V7.4.21 zip** (it carries the C32 mutual lock); ship V7.4.23 instead
