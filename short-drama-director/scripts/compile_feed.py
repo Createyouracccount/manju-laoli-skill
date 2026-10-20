@@ -62,7 +62,7 @@ def compile_project_to_feed(state):
             scn_tag = f"@{scn_name}（参考图{scn_fig}）"
         else:
             scn_tag = f"@{scn_name}（{scn.get('coords', '')}；{scn.get('set_states', {}).get('default', '')}；{scn.get('media_layer', '')}）"
-        # ★时段光影基准（2026-10-15 · model-adapters §5.0.5）：场景资产立唯一光影基准，镜行只写增量
+        # ★时段光影基准（2026-10-15 · model-adapters §5.0.5b）：场景资产立唯一光影基准，镜行只写增量
         _lt = scn.get("lighting", "")
         if _lt:
             scn_tag += f"；时段光影：{_lt}"
@@ -208,7 +208,7 @@ def self_test():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="漫剧老李 V7.4.20 P4 投喂自动装配编译器")
+    ap = argparse.ArgumentParser(description="漫剧老李 V7.4.26 P4 投喂自动装配编译器")
     ap.add_argument("--state", help="project_state.json 路径")
     ap.add_argument("--out", help="输出投喂稿 .md 路径（不指定则打印到标准输出）")
     ap.add_argument("--self-test", action="store_true")

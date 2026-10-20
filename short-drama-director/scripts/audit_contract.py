@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-audit_contract.py — 漫剧老李 Short-Drama Director Suite 全流程交付契约与权威源核销器 (V7.4.20)
+audit_contract.py — 漫剧老李 Short-Drama Director Suite 全流程交付契约与权威源核销器 (V7.4.26)
 
 专治外部 Agent 三大通病（2026-10-14 实测根因封堵）：
   1. 「拿 validate_prompt.py 机检全绿当任务完成」——只写 P4 投喂稿，漏掉 P0B 情绪锚点表、P1 表演档案/世界锚/人物锚、P3 场面调度/故事板图、P5 连续性台账/素材接线单；
@@ -80,7 +80,7 @@ CONTRACT_ITEMS_FULL = [
 ]
 
 
-def print_init_checklist(mode="full", director=None):
+def print_init_checklist(mode="full", director=None, delivery=None):
     print("# 📋 Short-Drama Director 全流程交付契约核销表（开工必建 · 交付必核）")
     print("")
     print("> **铁律**：`validate_prompt.py` 报 `PASSED` 只代表「P4 投喂块语法合格」，**绝不代表全流程交付完成**！")
@@ -89,7 +89,15 @@ def print_init_checklist(mode="full", director=None):
     print("")
     print("| 状态 | 契约码 | 阶段交付物 | 唯一权威源文件（必须回读，禁凭印象手搓） | 必现结构指纹（机检核销项） |")
     print("| :--- | :--- | :--- | :--- | :--- |")
+    print(f"> 检查范围：{delivery or mode}；本工具仅检查结构指纹，不证明语义核销。")
     for code, title, ref_path, fp in CONTRACT_ITEMS_FULL:
+        if delivery == "feed-only" and code not in ("CT5-P4F", "CT6-P5Q"):
+            continue
+        if delivery == "agent-bundle" and not code.startswith(("CT2-", "CT3-", "CT5-", "CT6-")):
+            continue
+        if delivery in ("feed-only", "agent-bundle") and code == "CT6-P5Q":
+            code, title = "CT6-WIR", "M1 素材接线单"
+            fp = "仅检查素材接线单及控制什么/不控制什么指纹；不要求完整 P5 台账"
         if mode == "board-lite" and code in ("CT1-P0B", "CT1-P1B", "CT4-BLK"):
             continue
         print(f"| `[ ]` | `{code}` | **{title}** | `{ref_path}` | {fp} |")
@@ -111,7 +119,14 @@ def print_init_checklist(mode="full", director=None):
             print(f"- 请运行 `python3 short-drama-director/scripts/style-lock-recommend.py` 或查阅 `director-style-catalog-74.md` 提取 `{director}` 的正主槽位。")
 
 
-def audit_markdown(text, mode="auto", director=None):
+def audit_markdown(text, mode="auto", director=None, delivery=None):
+    """仅检查结构指纹；不证明内容正确、逐项完整或语义核销。"""
+    if delivery not in (None, "full-project", "agent-bundle", "feed-only"):
+        raise ValueError(f"未知交付范围：{delivery}")
+    if mode not in ("auto", "full", "board-lite"):
+        raise ValueError(f"未知审计模式：{mode}")
+    if delivery == "full-project":
+        mode = "full"
     issues = []
     warns = []
     passed = []
@@ -164,7 +179,7 @@ def audit_markdown(text, mode="auto", director=None):
         and ("voicedescription" in _tnl or "图底音色速览标签" in _tn)
     )
     if has_chr_template:
-        passed.append("CT2-CHR 角色四格无脸立绘提示词已按 sd-asset-engine 权威模板展开（含4格/无脸全身/五官10项/声纹与Voice标签）")
+        passed.append("CT2-CHR 角色四格无脸立绘提示词命中结构指纹（4格/无脸全身/五官10项/Voice标签；不证明模板完整性）")
     else:
         issues.append(
             "CT2-CHR 角色资产提示词未按权威模板展开（疑似简笔糊弄版！）——必须回读 "
@@ -178,7 +193,7 @@ def audit_markdown(text, mode="auto", director=None):
         and ("标注降级条款" in _tn or "画面纯净要求" in _tn)
     )
     if has_scn_template:
-        passed.append("CT2-SCN 场景母版 + 3×3 九宫格 8 字段提示词已按权威模板展开")
+        passed.append("CT2-SCN 场景母版 + 3×3 九宫格 8 字段提示词命中结构指纹（不证明模板完整性）")
     else:
         issues.append(
             "CT2-SCN 场景资产提示词未按权威模板展开（疑似简笔糊弄版！）——必须回读 "
@@ -192,7 +207,7 @@ def audit_markdown(text, mode="auto", director=None):
         and ("禁止手持" in _tn or "不出现人物、人手" in _tn)
     )
     if has_prp_template:
-        passed.append("CT2-PRP 道具四格设定图提示词已按权威模板展开")
+        passed.append("CT2-PRP 道具四格设定图提示词命中结构指纹（不证明模板完整性）")
     else:
         issues.append(
             "CT2-PRP 道具资产提示词未按权威模板展开（疑似简笔糊弄版或缺失！）——必须回读 "
@@ -216,7 +231,7 @@ def audit_markdown(text, mode="auto", director=None):
             if d_key == k or d_key in v["name"] or v["name"] in d_key:
                 hits = [kw for kw in v["keywords"] if kw in text]
                 if len(hits) >= 2:
-                    passed.append(f"CT3-STY I 锁画风已对齐 style-bible [{k} {v['name']}] 正主槽位词 {hits[:4]}")
+                    passed.append(f"CT3-STY I 锁画风命中 style-bible 结构指纹（非语义核销） [{k} {v['name']}] 正主槽位词 {hits[:4]}")
                 else:
                     issues.append(
                         f"CT3-STY I 锁画风疑似手搓近似词：检测到导演卡 [{k} {v['name']}]，但正文未命中 style-bible 正主槽位指纹词 "
@@ -259,6 +274,14 @@ def audit_markdown(text, mode="auto", director=None):
         else:
             issues.append("CT6-LED 缺失 P5《跨镜连续性台账（Continuity Ledger）》（须逐段登记 SET_STATE / CHAR_STATE / 道具落点 / 出口帧，权威见 continuity-ledger.md）")
 
+    # 精简交付只核对其承诺范围，不要求 P0/P1/P3/P5 全项目档案。
+    if delivery in ("feed-only", "agent-bundle"):
+        prefixes = ("CT5-", "CT6-WIR")
+        if delivery == "agent-bundle":
+            prefixes += ("CT2-", "CT3-")
+        issues = [item for item in issues if item.startswith(prefixes)]
+        warns = [item for item in warns if item.startswith(prefixes)]
+        passed = [item for item in passed if item.startswith(prefixes)]
     return issues, warns, passed
 
 
@@ -311,6 +334,8 @@ def main():
     ap.add_argument("--init", action="store_true", help="开工前输出《全流程交付契约核销表》")
     ap.add_argument("--mode", default="auto", choices=["auto", "full", "board-lite"], help="交付模式")
     ap.add_argument("--director", default=None, help="锁定的导演卡编号或姓名（如 07 / 路阳 / 33 / 朴赞郁）")
+    ap.add_argument("--delivery", choices=["full-project", "agent-bundle", "feed-only"],
+                    help="结构指纹范围：全项目 / 资产加投喂与接线 / 仅投喂与接线；省略保留旧模式")
     ap.add_argument("--self-test", action="store_true", help="运行内置自测")
     args = ap.parse_args()
 
@@ -318,7 +343,8 @@ def main():
         sys.exit(_self_test())
 
     if args.init or not args.file:
-        print_init_checklist(mode="full" if args.mode == "auto" else args.mode, director=args.director)
+        print_init_checklist(mode="full" if args.mode == "auto" or args.delivery == "full-project" else args.mode,
+                             director=args.director, delivery=args.delivery)
         sys.exit(0)
 
     if not os.path.isfile(args.file):
@@ -328,7 +354,7 @@ def main():
     with open(args.file, "r", encoding="utf-8") as f:
         txt = f.read()
 
-    issues, warns, passed = audit_markdown(txt, mode=args.mode, director=args.director)
+    issues, warns, passed = audit_markdown(txt, mode=args.mode, director=args.director, delivery=args.delivery)
     print(f"=== 📋 全流程交付契约核销报告 ({os.path.basename(args.file)} | mode={args.mode}) ===")
     for p in passed:
         print(f"  [PASS] {p}")
@@ -339,7 +365,7 @@ def main():
     if issues:
         print(f"\n[-] 交付契约未通过：共 {len(issues)} 项契约/权威源缺失！严禁把 validate_prompt 格式全绿当成任务完成！")
         sys.exit(1)
-    print(f"\n[+] 交付契约全项核销通过（共 {len(passed)} 项硬产出与权威模板指纹全部在位）")
+    print(f"\n[+] 交付契约结构指纹检查通过（共 {len(passed)} 项；不代表语义核销、模板完整或全流程完成）")
     sys.exit(0)
 
 

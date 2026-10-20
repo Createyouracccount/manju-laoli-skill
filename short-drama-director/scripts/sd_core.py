@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-sd_core.py · 漫剧老李 V7.4.20 套装唯一公共解析内核与跨阶段状态台账引擎
+sd_core.py · 漫剧老李 V7.4.26 套装唯一公共解析内核与跨阶段状态台账引擎
 定位：
   1. 终结「多脚本各自写正则导致修A漏B」——统一提供 TIME_RE、SHOT_TAG_RE、模型时长与字数契约、
      镜行解析 parse_shots()、时间轴解析 parse_time_ranges()、镜行头提取 extract_shot_head()。
@@ -95,7 +95,7 @@ def parse_shots(body):
 def default_project_state():
     """生成标准 project_state.json 模板结构（覆盖 P0~P5 跨阶段核心锁定项）。"""
     return {
-        "schema_version": "7.4.20",
+        "schema_version": "7.4.23",
         "project_name": "示例短剧项目",
         "locks": {
             "track": "1",
@@ -315,7 +315,7 @@ def self_test():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="漫剧老李 V7.4.20 公共解析内核与状态台账工具")
+    ap = argparse.ArgumentParser(description="漫剧老李 V7.4.26 公共解析内核与状态台账工具")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--init-state", metavar="JSON_PATH", help="生成标准 project_state.json 模板")
     args = ap.parse_args()

@@ -8,7 +8,13 @@
 用法：
   python scripts/validate_prompt.py <提示词文件.md|.txt>
       [--model 2.5|2.0|h3] [--mode new|extend] [--track 1|2|3|4] [--combat on|off|auto]
-      [--c23 on|off|auto] [--style-source 导演名] [--aspect 16:9|9:16|21:9] [--json] [--self-test]
+      [--c23 on|off|auto] [--style-source 导演名] [--aspect 16:9|9:16|21:9] [--by-segment]
+      [--json] [--self-test]
+
+  ★ --by-segment（2026-10-19 新增 · 多段稿必加）：按稿内「段N/M」标题逐段独立校验。
+     多段稿（90s = 3×30s）整份送检时，脚本会把三段时长与镜数累计，读成「90s 一段/多镜」，
+     从而误判打戏档触发 C21/C22、并让 C10 单镜时长与 C15 特写占比失真——
+     **凡一稿含 ≥2 段，一律加 --by-segment 出正式结论**；C31 契约仍按整份文本核销。
 
 退出码：0 = PASSED · 1 = 有 FAIL · 2 = 用法/参数错误 · 3 = 非投喂稿件（规则库文档/README/看板，
         不跑稿件级判据——见 _looks_like_feed 注）
@@ -107,6 +113,8 @@
       两份病灶稿 → 全部 PASSED。本组把 §四 从"文档里的建议"变成"会响的检查"。
       WARN  C18g 镜行未标注运镜：镜行头「景别 · 视角 · 运镜。」缺运镜词 → 运镜留给模型自选，
             出片偏静止/套路；常态应以微运镜（极缓慢推/横移/漂移）替代绝对静止
+            ★2026-10-16：词表补「定格族」（时间类技法）+ 运镜库补录（环移/甩摇/SPIN/TILT/轨迹跟焦…）
+            ——此前照 camera-specs-15rules.md §二 写「命中瞬间定格」必被误报（粉丝排查报告核验属实）
       WARN  C18h 一镜多主运镜：单镜并列 ≥3 种运镜技法 → 一镜塞多套运动，画面必乱
       FAIL  C18i 无动机运镜：镜行出现 无动机/毫无动机/随机/乱晃/胡乱甩动/疯狂甩动 等——
             §四「烈度必须由情绪买单，禁止无理由晃动」
@@ -130,6 +138,11 @@
             说明该给的特写没给（情绪落不了地）；高于 40% 说明滥用（人脸廉价化）。镜数 <6 不判。
             判据：镜行头景别命中特写/大特写，且镜行含人物锚点（@人名 / @CHR-）或人体部位词
             → 计为人物特写；两者皆无 → 判物件特写，剔除。
+      WARN  C18p 景别占比越界（2026-10-16 新增 · 补「景别维度只有特写一个区间」的缺口）：
+            按 short-drama-camera-system.md §一「景别占比预算表」六组归并（远/全/中/中近/近/特）
+            判占比，**文戏档 / 打戏档分列**。**文戏「特」档交 C18n 独管**（防双报）；**镜数 <10
+            不判**、期望镜数 <1 的档跳过、偏差 <5pp 不报（防噪声）。区间为起步基准·推演值。
+            ★ 编号：C18o 已用于「时段光影基准在段」，本码取 C18p（编号不重排）。
   C19 禁令失效三改法 + 栏目纪律（model-adapters §5.0.4，
       病灶实测：三条否定式禁令两轮全被无视——空房间开场/玉佩全片自发光/宣判词配甜笑）：
       WARN  C19a 裸禁令词污染：镜行内出现 不发光/不透光/不悬浮/面无笑意 等否定式写法
@@ -245,6 +258,13 @@
       WARN  C30d 外挂激活回执头缺失：稿件顶部未写「激活外挂 / 已读子库 / 本段调用外挂指纹」
                 （触发门同上；2026-10-14 Agent 修复前该门只认显式 --plugin —— 默认 auto 下整组 C30c/C30d 不跑，
                   与总控 SKILL.md 把它写成硬规形成空档）
+  C32 画面段最低三要素（2026-10-16 新增 · 治「画面提示词没有背景描述」）：
+      WARN  C32 镜行「画面段」（`台词：` 之前）未同时含 ② 背景元素 ③ 光线方向 → 只写人物动作
+            = 主体贴白墙，模型自补背景 → 每镜背景不一致（跨镜穿帮）。① 人物位置/姿态由 C18f +
+            C17 摆位必入画管，本码不重复判。豁免：纯空镜（写明「无人物」）/ 微距大特写（材质或
+            光线二者其一即可）/ 模板骨架行与占位符行。**不设镜数下限**——逐镜缺陷，一镜到底的
+            单镜段同样适用。规则权威：shot-economy-and-acting.md §九。
+            ★ 编号：C30 已用于「外挂指纹与跨阶段交接探针」，本码取 C32（编号不重排）。
 
 H 系列（--model h3 · MiniMax H3 格式支线 · h3-adapter.md）：
   H1 字段集       Ref2VA 六段齐全且顺序正确；基础模式三字段齐全
@@ -440,7 +460,12 @@ DIALOGUE_RE = re.compile(r"台词：\s*(?!无(?![\u4e00-\u9fffA-Za-z0-9]))")
 # 落点：C11b 段缝末镜定格缺失 · C17c 站位无背景锚点 · C18f 景别幅度越界 ·
 #       C20e 过肩左右前景写反/缺前景 · C25c AIGC 假表演词 · C12b 跨项目污染
 # C11b 末镜定格：段末镜行内须含定格类词（产出可截帧的定格尾帧）
-TAIL_FREEZE_WORDS = ("定格", "定住", "静止", "顿住", "凝住", "硬切", "定镜收束")
+TAIL_FREEZE_WORDS = ("定格", "定住", "静止", "顿住", "凝住", "定镜收束")
+# ★2026-10-18 修（粉丝实测）：D锁②换机位硬切**法定不写末 1 秒定格**，末镜写「接口余量」保留运动
+#   （segment-splicing.md §四·甲）。旧版把「硬切」误放进 TAIL_FREEZE_WORDS，导致双向误判——
+#   ②末镜写「硬切」→ 假 PASS（撞进定格词表，其实没定格）；②末镜只写「接口余量」→ 假 FAIL（报警）。
+#   现将「硬切」移出定格词表，另立豁免词表：命中即按②执行，C11b 不报。
+SEAM_MARGIN_WORDS = ("接口余量", "硬切")
 # C17c 背景锚点锁：站位声明每人的括号内须绑定「身后/侧后最可辨识背景物」
 ANCHOR_WORDS = ("身后", "背后", "侧后", "后方", "背靠", "身后侧", "后侧")
 ANCHOR_EXEMPT = ("无背景锚点", "免锚点", "无锚点", "无背景", "空镜")
@@ -494,11 +519,37 @@ CAM_FAMILIES = {
     "跟拍": "跟", "跟移": "跟", "摇镜": "摇", "俯仰": "俯仰", "上摇": "俯仰", "下摇": "俯仰",
     "升降": "升降", "环绕": "环绕", "弧形": "环绕",
     "轨道": "轨道", "摇臂": "摇臂",
-    "变焦": "变焦", "滑动变焦": "滑动变焦", "Dolly": "滑动变焦", "Zoom": "滑动变焦",
+    # ★变焦族四件套（2026-10-16 修订 · 治「光学变焦无独立条目 + 别名误判」）：
+    #   光学变焦（机位不动·焦段变） / 滑动变焦（位移+反向变焦） / 急速变焦（高速变焦）三分。
+    #   旧版把 `Zoom` 一律归滑动变焦，且重技法正则吞掉「变焦推进 / 急推变焦」→ 普通光学变焦
+    #   要么被误判超限、要么完全无规则可依（粉丝「森林」2026-10-16 反馈 · 核验属实且更严重）。
+    "变焦": "光学变焦", "光学变焦": "光学变焦", "变焦推拉": "光学变焦", "Zoom": "光学变焦",
+    "滑动变焦": "滑动变焦", "Dolly": "滑动变焦", "Dolly Zoom": "滑动变焦",
+    "急速变焦": "急推", "急推变焦": "急推", "Snap Zoom": "急推",
     "手持": "手持", "微漂": "漂移", "漂移": "漂移", "甩镜": "甩",
     "POV": "POV", "主观视角": "POV",
     "荷兰角": "荷兰角", "鱼眼": "鱼眼", "Snorricam": "Snorricam",
     "升格": "升格", "降格": "降格", "Snap": "急推", "Rack": "移焦",
+    # ★定格族（2026-10-16 补 · 独立成族「定格」）——治「照文档写反被 C18g 误报『未标注运镜』」
+    #   病根（粉丝排查报告 · 核验属实 · 已端到端复现）：camera-specs-15rules.md §二「镜头规格五要素」
+    #   把「命中瞬间定格（Hit-Stop 微停顿，1~2 帧）」与跟拍/急推/急拉/甩镜闪切**并列写进运镜槽**，
+    #   但本表只按 §四 运镜总表的「运动类」技法建词，**时间类技法零收录** → 执行者照文档写，
+    #   镜行头运镜族解析为空集，C18g 必然误报。同类前科：2026-10-12 平摇同义词（见上注）。
+    #   ★独立成族、**不并入「固定」**：Hit-Stop 是**时间技法**（1~2 帧时间冻结），不是机位静止——
+    #   并入固定会被 C18j 计入打戏 10% 固定配额（判据 `fams == {"固定"}`），制造新误报。
+    "命中瞬间定格": "定格", "命中定格": "定格", "定镜收束": "定格",
+    "定格": "定格", "定镜": "定格", "凝固": "定格", "凝住": "定格",
+    "定住": "定格", "顿帧": "定格", "微停顿": "定格",
+    "Hit-Stop": "定格", "Hit Stop": "定格", "HitStop": "定格",
+    # ★运镜库补录（2026-10-16 · 同批「文档法定词 × 词表」反向覆盖核对发现 · 全 25 个空集词）：
+    #   环移（sd-real-engine camera-action-specs.md §④ 法定运镜方式）·
+    #   甩摇 / Whip Pan · SPIN陀螺旋转 · TILT-up / TILT-down（sd-combat-engine syntax-corpus.md
+    #   模式F 运镜规格总纲「可用镜头库」）· 轨迹跟焦 · 焦点纵深拉移（§四 单技法 #6）·
+    #   弹性后弹（模式F 库）。此前一律解析为空集 → 照文档写必报 C18g。
+    "环移": "环绕", "甩摇": "甩", "Whip Pan": "甩", "WhipPan": "甩",
+    "SPIN": "环绕", "Spin": "环绕", "陀螺旋转": "环绕",
+    "TILT-up": "俯仰", "TILT-down": "俯仰", "Tilt-up": "俯仰", "Tilt-down": "俯仰",
+    "轨迹跟焦": "跟", "焦点纵深拉移": "移焦", "弹性后弹": "拉",
 }
 # C18i 无动机运镜（§四 手持三级烈度：烈度必须由情绪买单，禁止无理由晃动）
 CAM_MOTIVELESS = ("无动机", "毫无动机", "没有动机", "无理由晃动", "无理由地晃动",
@@ -516,7 +567,9 @@ CAM_COVER_MIN = 4
 CAM_COVER_MIN_SHOTS = 6
 # C18l 重技法频率上限（§四 表）：(显示名, 正则, 上限, 统计口径 whole/seg)
 CAM_HEAVY_LIMITS = (
-    ("滑动变焦", r"滑动变焦|Dolly\s*Zoom|变焦推进|急推变焦", 1, "whole"),
+    # ★ 名额只认「真滑动变焦」（位移 + 反向变焦）——2026-10-16 收窄：
+    #   旧正则含「变焦推进 / 急推变焦」，把普通光学变焦与急速变焦也算进全片≤1 名额（误报超限）。
+    ("滑动变焦", r"滑动变焦|Dolly\s*Zoom|推进变焦反向拉移", 1, "whole"),
     ("环绕/弧形", r"环绕|弧形", 3, "whole"),
     ("Snorricam", r"Snorricam", 1, "whole"),
     ("鱼眼", r"鱼眼", 2, "whole"),
@@ -858,6 +911,57 @@ CU_SHOT_RE = re.compile(r"特写")                              # 特写/紧特�
 # 口径裁定（2026-10-13）：**人体局部肢体（手/拳/肩背…）计入人物特写**（承担表演/情绪功能）；
 #   **仅纯物件特写（道具/器物/环境物件）不计入**。判定基准 = 镜行内有无人物锚点或人体部位词。
 CU_RATIO_MIN, CU_RATIO_MAX = 0.25, 0.40
+# ---- C18p 景别占比预算口径（2026-10-16 新增 · 补「景别维度只有特写一个区间」的缺口）----
+# 病根（粉丝「森林」2026-10-16 反馈 · 核验属实）：景别维度此前**只有特写一个区间**（C18n），
+#   大远景/远景/全景/中全景/中景/中近景/近景**全无占比预算** → 整段景别分布全凭手感，零兜底。
+# 规则权威：short-drama-camera-system.md §一「景别占比预算表」（文戏/打戏分列）。
+# 口径：① 九档归并为 6 组；② 镜数 <10 不判；③ 掉出区间 → WARN；④ 打戏档按打斗词命中判。
+# ★ 编号说明：本包 C18o 已用于「时段光影基准在段」（2026-10-15），故本码取 C18p（编号不重排）。
+SHOT_BUDGET = {
+    # 组名: (文戏下限, 文戏上限, 打戏下限, 打戏上限)；文戏「特」档为 None → 交 C18n 独管，防双报
+    "远": (0.00, 0.10, 0.05, 0.15),
+    "全": (0.10, 0.20, 0.20, 0.35),
+    "中": (0.15, 0.25, 0.15, 0.30),
+    "中近": (0.15, 0.25, 0.10, 0.20),
+    "近": (0.05, 0.15, 0.05, 0.15),
+    "特": (None, None, 0.00, 0.25),
+}
+SHOT_SIZE_GROUPS = (
+    # (组名, 正则) —— 顺序即优先级：长词/特例在前，避免「中近景」被算成「近景」、「大全景」被算成「全景」
+    ("远", r"大远景|远景|大全景"),
+    ("全", r"全景"),
+    ("中近", r"中近景"),
+    ("中", r"中景"),
+    ("近", r"近景"),
+    ("特", r"特写|大特写|紧特写|极特写|超特写"),
+)
+# 打戏段识别（C18p 分档用 · 保守：≥3 个打斗词命中才算打戏档，宁按文戏档判）
+COMBAT_SEG_RE = re.compile(r"打|劈|砍|拳|掌|肘|踢|撞|挥|斩|刺|抽|爆|擒|摔|格挡|闪避|出招|兵器|刀|剑|棍|鞭")
+# ---- C32 画面段最低三要素（2026-10-16 新增 · 治「画面提示词没有背景描述」）----
+# 病根：shot-economy-and-acting.md §九 早就写了「画面描述必须包含…背景元素」，但**全脚本零断言**
+#   → 执行者只写人物动作、背景全空；模型自行补背景 → 每镜背景不一致 = 跨镜穿帮。
+#   同 §一 特写区间 2026-10-13 的历史教训：**只写不检 = 不生效**。
+# 判据：镜行「画面段」（`台词：` 之前的部分）须同时含 ② 背景元素 ③ 光线方向。
+# ★ 编号说明：本包 C30 已用于「外挂指纹与跨阶段交接探针」（2026-10-14），故本码取 C32（编号不重排）。
+BG_ELEM_RE = re.compile(
+    r"窗|门|帘|墙|柱|梁|桌|椅|床|柜|架|屏|梯|栏|廊|院|树|花|草|石|砖|瓦|阶|"
+    r"灯|烛|火|光|影|雾|雨|雪|风|烟|尘|帘幕|帷幕|背景|身后|远处|窗外|门外|前景|后景|"
+    r"陈设|家具|墙面|地面|屋顶|天空|街|巷|路|河|桥|山|"
+    # ★2026-10-16 扩词：原表只有「树花草石」数项，实测明确的**背景环境行为**被漏判（假 WARN）——
+    #   例：「脚下泥土犁出两道浅沟，竹叶被气浪掀飞」中「泥土」「竹叶」全不在表内 → 判成"无背景"。
+    #   补 ① 自然环境元素 ② 环境行为（背景"活着"的证据）。
+    r"竹|叶|枝|藤|苔|泥|土|沙|溪|泉|水|露|霜|林|木|坡|崖|谷|篱|檐|渠|沟|灰|烬|"
+    r"飘|摇曳|晃动|扬起|掠|拂|摆动|升腾|弥漫|飞溅|迸溅|流淌|翻涌|掀起|掀飞")
+LIGHT_DIR_RE = re.compile(
+    r"光|影|亮|暗|照|逆光|顺光|侧光|顶光|硬光|柔光|冷|暖|色温|月|日|晨|暮|夜|"
+    r"灯|烛|火|窗光|天光|反光|打光|补光|轮廓光")
+# C32 豁免③ 模板骨架行 / 占位符行黑名单（七段式骨架图、各引擎的"格式模板"里的镜行是**占位骨架**，
+#   不是真实镜行——它们故意只写要素名不写内容，C32 不适用）。
+C32_PLACEHOLDER = (
+    "…", "〔", "景别 · 视角角度 · 运镜",
+    "动作与受力", "音效描述", "动作描述与接触受力", "接触受力事实", "情绪拐点与破防",
+    "终结技绝杀命中高潮定格",
+)
 CU_PERSON_ANCHOR_RE = re.compile(r"@CHR-|@(?!SCN-|PRP-|ITM-|PROP-|ENV-)[\u4e00-\u9fa5A-Za-z]{1,8}")
 CU_BODY_PART_RE = re.compile(
     r"眼皮|眼睑|眼睛|眼珠|眼球|瞳孔|睫毛|眉头|眉心|眉|嘴角|唇|嘴唇|喉咙|喉结|下颌|下巴|"
@@ -975,7 +1079,10 @@ COMBAT_TACTIC_TYPES = {
 COMBAT_BEAT_RE = {
     "起": re.compile(r"沉肩|压低重心|碾碎|绷紧|屏息|蓄力|蓄势|预备|屈膝|后仰|重心下压|攒"),
     "爆": re.compile(r"暴起|骤然|猛地|瞬间|陡然|疾掠|扑上|冲出|甩出|弹射|暴涌"),
-    "顿": re.compile(r"顿住|时停|顿帧|定格|凝固|压在|静止"),
+    # ★2026-10-16 补「停顿」（「停顿」子串覆盖文档规范措辞「Hit-Stop 微停顿」，camera-specs-15rules.md §二）：
+    #   原表无「停顿」→ 为规避 C18g 把镜行头改写成「固定」的执行者会立刻被 C22c 报"缺「顿」"——
+    #   同一稿同一镜被两门夹杀、**执行者无合规写法**（粉丝排查报告核验属实 · 已复现）。
+    "顿": re.compile(r"顿住|时停|顿帧|定格|凝固|压在|静止|停顿"),
     "收": re.compile(r"卸力|稳住|侧滑|滑退|收势|滑步|落地缓冲|后撤|站定|单膝|卸掉冲势"),
 }
 # 全身入画档（能同时看见重心与双脚）vs 贴脸档（只能看见接触点）
@@ -2130,8 +2237,8 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                   "（背靠卷帘门），禁重复画面左右——双重发位会让人物「东一个西一个、突然出现在身后」"
                   "（model-adapters §5.0）。确需越轴/大幅移动，在段首【站位声明】的「位移：」行写明「起点→终点」")
 
-    # C18o 时段光影基准在段（2026-10-15 · model-adapters §5.0.5 · 治"AI 光不知从哪打"）
-    # 病根：七段式原本镜行无光影位 → AI 光路随机、画面发灰。§5.0.5 要求【场景资产】立时段光影基准、
+    # C18o 时段光影基准在段（2026-10-15 · model-adapters §5.0.5b · 治"AI 光不知从哪打"）
+    # 病根：七段式原本镜行无光影位 → AI 光路随机、画面发灰。§5.0.5b 要求【场景资产】立时段光影基准、
     #   镜行只写增量/特写眼神光。本条保守兜底：整段既无时段光影基准、镜行也无任何光影词 → WARN。
     #   保守判据（宁漏勿误）：段内出现任一处光影信号即放行（"时段光影："或镜行主光/轮廓/眼神/冷暖等词）。
     _LIGHT_SIG = re.compile(
@@ -2141,7 +2248,7 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         if not _LIGHT_SIG.search("".join(_l_seg) + _blk_seg):
             warns.append(
                 f"C18o [{_nm_seg}] 时段光影基准缺失：整段既无【场景资产】时段光影、镜行也无任何光影词——"
-                "AI 会随机打光、画面发灰（model-adapters §5.0.5）。请在【场景资产】补「时段光影：主光方向·光质·"
+                "AI 会随机打光、画面发灰（model-adapters §5.0.5b）。请在【场景资产】补「时段光影：主光方向·光质·"
                 "光色冷暖·天空/时段·暗部补色」，镜行只写增量/特写眼神光；反光道具不写光效、禁写光比 X:1 参数")
 
     # C17e 人数变化未交代（法则 20·②b「新面孔首现要交代」· 2026-10-13 新增 · 用户实测反馈）
@@ -2550,6 +2657,111 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                 "（short-drama-camera-system.md §一·4 特写使用铁律与场景清单）。"
                 "口径：**含人体局部肢体（手/拳/肩背）**，**仅纯物件特写不计入**。")
 
+    # C18p 景别占比越界（2026-10-16 新增 · camera-system §一「景别占比预算表」）
+    # ★ 编号说明：本包 C18o 已用于「时段光影基准在段」（2026-10-15），本码取 C18p。
+    # 病根（粉丝「森林」2026-10-16 反馈 · 核验属实）：景别维度此前**只有特写一个区间**（C18n），
+    #   大远景/远景/全景/中全景/中景/中近景/近景**全无占比预算** → 整段景别分布全凭手感，零兜底。
+    # 口径：① 六组归并（远/全/中/中近/近/特）；② **镜数 <10 不判**——占比预算在小样本上无统计意义
+    #   （8 镜时 5% 下限只合 0.4 镜，会把合规稿误判越界；这是与 C18n「<6 不判」口径的差别所在）；
+    #   ③ 文戏「特」档交 C18n 独管（防双报）；④ 打戏档需 ≥3 个打斗词命中，否则按文戏档判（宁松勿误报）；
+    #   ⑤ **期望镜数 <1 的档跳过**（下限 × 总镜数 <1 → 该档在数学上无法达标，属样本量问题而非缺陷）；
+    #   ⑥ **偏差 <5 个百分点不报**（防噪声；误报比漏检更伤）。
+    _sb_lines = []
+    for _seg18p in seg_zw:
+        _sb_lines.extend(_seg18p[5])
+    if len(_sb_lines) >= 10:
+        _sb_hits, _sb_total, _sb_txt = {}, 0, []
+        for _ln18p, _l18p in _sb_lines:
+            _hd18p = _shot_head(_l18p)
+            if not _hd18p:
+                continue
+            _sb_total += 1
+            _sb_txt.append(_l18p)
+            for _g18p, _gr18p in SHOT_SIZE_GROUPS:
+                if re.search(_gr18p, _hd18p[:32]):
+                    _sb_hits[_g18p] = _sb_hits.get(_g18p, 0) + 1
+                    break
+        if _sb_total >= 10:
+            _is_cbt = len(COMBAT_SEG_RE.findall("".join(_sb_txt))) >= 3
+            _bad18p = []
+            for _g18p, _gr18p in SHOT_SIZE_GROUPS:
+                _lo18p, _hi18p = (SHOT_BUDGET[_g18p][2], SHOT_BUDGET[_g18p][3]) if _is_cbt \
+                    else (SHOT_BUDGET[_g18p][0], SHOT_BUDGET[_g18p][1])
+                if _lo18p is None:
+                    continue
+                if _lo18p * _sb_total < 1:      # ⑤ 期望镜数 <1 → 样本量问题，不判
+                    continue
+                _r18p = _sb_hits.get(_g18p, 0) / _sb_total
+                if _r18p < _lo18p:
+                    if _lo18p - _r18p < 0.05:   # ⑥ 偏差 <5pp 不报
+                        continue
+                elif _r18p > _hi18p:
+                    if _r18p - _hi18p < 0.05:
+                        continue
+                else:
+                    continue
+                _bad18p.append(_g18p + "档 " + f"{_r18p:.0%}" +
+                               "（区间 " + f"{_lo18p:.0%}~{_hi18p:.0%}" + "）")
+            if _bad18p:
+                warns.append(
+                    "C18p 景别占比越界（" + ("打戏" if _is_cbt else "文戏") + "档 · 共 "
+                    + str(_sb_total) + " 镜）：" + "、".join(_bad18p)
+                    + "——权威 short-drama-camera-system.md §一「景别占比预算表」"
+                      "（起步基准·推演值，可按题材校准；窄幅变体须显式声明理由）。"
+                      "低于下限＝该给的镜头没给；高于上限＝该档滥用（如近景堆满＝情绪钝化）。"
+                      "⚠️ 本码与 C18n **分维度独立**：C18n 管特写（景别维度专档），本码管其余五档。")
+
+    # C32 画面段最低三要素（2026-10-16 新增 · 治「画面提示词没有背景描述」）
+    # ★ 编号说明：本包 C30 已用于「外挂指纹与跨阶段交接探针」（2026-10-14），本码取 C32。
+    # 病根（粉丝「森林」2026-10-16 反馈 · 核验属实）：shot-economy-and-acting.md §九 早写了
+    #   「画面描述必须包含：人物位置/姿态、光线方向、背景元素、关键细节」，但**全脚本零断言**
+    #   → 执行者只写人物动作、背景全空；模型只好自行补背景 → **每镜背景不一致 = 跨镜穿帮**。
+    # 判据：镜行「画面段」（`台词：` 之前的部分）须同时含 ② 背景元素 ③ 光线方向
+    #   （① 人物位置/姿态由 C18f 景别承载 + C17 摆位必入画管，本码不重复）。
+    # 豁免：① 纯空镜（画面段明写「无人物」）② 微距/大特写（只要求材质或光线其一）
+    #   ③ 模板骨架行/占位符行。**不设镜数下限**——"画面段缺背景"是逐镜缺陷，
+    #   一镜到底的单镜段同样适用（与 C18n/C18p 的"分布类判据需大样本"不同）。
+    _c32_lines = []
+    for _seg32 in seg_zw:
+        _c32_lines.extend(_seg32[5])
+    if _c32_lines:
+        # ★ ③ 光线方向 的**继承口径**（2026-10-16 修正 · 与 model-adapters §5.0.5b「光影单一基准」对齐）：
+        #   段首【场景资产】已立「时段光影」基准时，镜行**只写增量**——若仍逐镜强求光线方向，与该
+        #   教义互锁夹杀（照 §5.0.5b 写＝被 C32 逐镜报缺光线；照 C32 写＝违背"只写增量"），
+        #   执行者无合规写法。故：**段级有光影基准 → ③ 由基准继承，逐镜只判 ② 背景元素**；
+        #   段级无基准 → 才逐镜要求 ②③ 齐备（与原行为一致）。
+        #   段级基准判定与 C18o 同正则、同保守口径（段内非镜行文本出现任一处光影信号即算已立）。
+        _c32_bad = []
+        for _seg32 in seg_zw:
+            _hdr32 = "\n".join(_lx for _lx in _seg32[2] if not TIME_RE.search(_lx))
+            _base32 = bool(_LIGHT_SIG.search(_hdr32))
+            for _ln32, _l32 in _seg32[5]:
+                _hd32 = _shot_head(_l32)
+                if not _hd32:
+                    continue
+                _pic32 = _l32.split("台词：")[0] if "台词：" in _l32 else _l32
+                if "无人物" in _pic32 or "纯空镜" in _pic32:
+                    continue
+                if any(_ph in _l32 for _ph in C32_PLACEHOLDER):
+                    continue
+                _has_bg32 = bool(BG_ELEM_RE.search(_pic32))
+                _has_lt32 = bool(LIGHT_DIR_RE.search(_pic32)) or _base32
+                if re.search(r"微距|大特写|极特写|紧特写", _hd32[:32]):
+                    if not (_has_bg32 or _has_lt32):
+                        _c32_bad.append(_ln32)
+                elif not (_has_bg32 and _has_lt32):
+                    _c32_bad.append(_ln32)
+        if _c32_bad:
+            warns.append(
+                "C32 画面段缺背景/光线（" + str(len(_c32_bad)) + " 镜：第 "
+                + "、".join(str(_n32) for _n32 in _c32_bad[:6]) + " 行）——"
+                "shot-economy-and-acting.md §九：画面段须含 ① 人物位置/姿态 ② 背景元素"
+                "（前景/背景各 ≥1 处**场景真实存在**的物件或环境行为）③ 光线方向。"
+                "**③ 由段首【场景资产】「时段光影」基准继承**（model-adapters §5.0.5b：镜行只写增量）"
+                "——段内未立基准时才需逐镜写光线方向。"
+                "只写人物动作＝主体贴白墙，模型会自补背景 → **每镜背景不一致（跨镜穿帮）**。"
+                "豁免：纯空镜（写明「无人物」）/ 微距大特写（材质或光线二者其一即可）。")
+
     shot_lines = [(ln_i, l) for ln_i, l in enumerate(lines_all, 1) if TIME_RE.search(l)]
 
     # ---- C7b 镜行解析一致性元检查（2026-10-11 新增 · 防「检查器静默失效 → 假 PASS」）----
@@ -2900,7 +3112,7 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
     for ln_i, h in _cam_heads:
         if h and not _cam_families(h):
             warns.append(f"C18g 第{ln_i}行 镜行未标注运镜：镜行头「{h.strip()}」内无任何运镜词——"
-                         "§四「每个镜头必须标注运镜方式」（固定/推/拉/摇/移/跟/升降/环绕/手持…）。"
+                         "§四「每个镜头必须标注运镜方式」（固定/推/拉/摇/移/跟/升降/环绕/手持/定格…）。"
                          "运镜留空即交给模型自选，出片偏静止与套路化；常态用微运镜"
                          "（极缓慢推/极缓慢横移/呼吸感漂移）替代绝对静止"
                          "（short-drama-camera-system.md §四）")
@@ -3232,19 +3444,26 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         if not _shots:
             continue
         _last = _shots[-1][1]
-        if TAIL_FREEZE_WORDS and not any(w in _last for w in TAIL_FREEZE_WORDS) and "空镜" not in _last:
+        if (TAIL_FREEZE_WORDS and not any(w in _last for w in TAIL_FREEZE_WORDS)
+                and "空镜" not in _last
+                # ★2026-10-18 修：D锁②换机位硬切豁免——末镜写「接口余量 / 硬切」即按②执行，
+                # ②法定不写末 1 秒定格，报 WARN 会把合法②稿退回改写①（粉丝实测踩坑）。
+                and not any(w in _last for w in SEAM_MARGIN_WORDS)):
             _c11b_miss.append(_n)
     if not seg_zw:
         # 无【画幅风格】分段标记 → 退回整篇单段
         _tlines = [ln for ln in text.splitlines() if TIME_RE.search(ln)]
-        if _tlines and not any(w in _tlines[-1] for w in TAIL_FREEZE_WORDS) and "空镜" not in _tlines[-1]:
+        if (_tlines and not any(w in _tlines[-1] for w in TAIL_FREEZE_WORDS)
+                and "空镜" not in _tlines[-1]
+                and not any(w in _tlines[-1] for w in SEAM_MARGIN_WORDS)):
             _c11b_miss.append("全文")
     if _c11b_miss:
         warns.append(f"C11b 段缝末镜缺定格：{_c11b_miss} 的末镜未写定格——段末镜须在行内写"
-                     "「末 1 秒全体人物保持姿态与站位、动作完全静止、画面定格」"
+                     "「末 1 秒全体保持姿态与站位、动作完全静止、画面定格」"
                      "（其前 0.5 秒为收束窗：镜头趋缓、人物停止大幅动作），"
                      "产出可截帧的定格尾帧供下一段作画面依据；"
-                     "空镜结尾豁免（segment-splicing.md §二 末帧可截性）")
+                     "空镜结尾豁免；**D锁②换机位硬切亦豁免**——该段末镜改写「接口余量 0.5 秒：保留未收死的运动」，"
+                     "法定不写末 1 秒定格（segment-splicing.md §四·甲）")
     # C17c 背景锚点锁缺失——站位连续性的命脉是「人物相对背景不动」，不是画面坐标
     # ⚠️2026-10-14 修复（代码体检）：旧实现 `re.search` 只取**全文第一个**【站位声明】——
     #   段2 起的站位块背景锚点**全部漏检**。改为遍历 seg_zw 的**每段**站位块。
@@ -4286,7 +4505,7 @@ def _self_test():
     if any(x.startswith("C17f") for x in _w17f2):
         print("FAIL self-test: 只锚依托物不重复画面左右不应报 C17f", _w17f2); ok = 0
 
-    # 56d) C18o 时段光影基准在段（2026-10-15 · model-adapters §5.0.5）：整段无任何光影词 → WARN；补时段光影 → 不报
+    # 56d) C18o 时段光影基准在段（2026-10-15 · model-adapters §5.0.5b）：整段无任何光影词 → WARN；补时段光影 → 不报
     _, _w18o, _ = validate(_c17f_body(), "2.5", "new")   # 该 feed 无任何光影词
     if not any(x.startswith("C18o") for x in _w18o):
         print("FAIL self-test: 整段无光影基准应报 C18o", _w18o); ok = 0
@@ -4328,6 +4547,19 @@ def _self_test():
     _, _w_c11b_m_ok, _ = validate(_t_c11b_multi_ok, "2.5", "new")
     if any(x.startswith("C11b") for x in _w_c11b_m_ok):
         print("FAIL self-test: 多段稿两段末镜均有定格不应报 C11b", _w_c11b_m_ok); ok = 0
+    # 61d) ★2026-10-18：D锁②换机位硬切豁免——末镜写「接口余量」不写定格 → 不报 C11b
+    #      （旧版「硬切」误在 TAIL_FREEZE_WORDS：②末镜写「硬切」→ 假PASS；只写「接口余量」→ 假FAIL）
+    _t_c11b_margin = t_ok.replace(
+        "指尖微颤。",
+        "她抬手下压。接口余量 0.5 秒：保留未收死的运动，供剪辑吃转场。")
+    _, _w_c11b_margin, _ = validate(_t_c11b_margin, "2.5", "new")
+    if any(x.startswith("C11b") for x in _w_c11b_margin):
+        print("FAIL self-test: D锁②接口余量不应报 C11b", _w_c11b_margin); ok = 0
+    # 61e) 反向：末镜含「硬切」二字但无定格词 → 亦不报（硬切已移出定格词表、改走②豁免）
+    _t_c11b_hardcut = t_ok.replace("指尖微颤。", "她抬眼。直接硬切至下一段。")
+    _, _w_c11b_hc, _ = validate(_t_c11b_hardcut, "2.5", "new")
+    if any(x.startswith("C11b") for x in _w_c11b_hc):
+        print("FAIL self-test: D锁②末镜含硬切不应报 C11b", _w_c11b_hc); ok = 0
     # 62) 违规：站位声明无背景锚点 → C17c
     _, _w_c17c, _ = validate(t_ok, "2.5", "new")
     if not any(x.startswith("C17c") for x in _w_c17c):
@@ -4426,6 +4658,25 @@ def _self_test():
                 if x.startswith(("C18g", "C18h", "C18i", "C18j", "C18k", "C18l"))]
     if _cam_bad:
         print("FAIL self-test: 合规运镜稿不应报 C18g~l", _cam_bad); ok = 0
+    # 69e) 定格族入表（2026-10-16 补 · 粉丝排查报告核验属实）：镜行头只写定格族 → 不得报 C18g
+    _t_freeze1 = t_ok.replace("[镜头2] 特写 · 侧角 · 固定。", "[镜头2] 特写 · 侧角 · 命中瞬间定格。")
+    _, _w_freeze1, _ = validate(_t_freeze1, "2.5", "new")
+    if any(x.startswith("C18g") for x in _w_freeze1):
+        print("FAIL self-test: 镜行头写「命中瞬间定格」不应报 C18g（定格族应入词表）", _w_freeze1); ok = 0
+    # 69f) 定格族与拉镜并列 = 两族 → 不超 C18h 上限（上限 2）
+    _t_freeze2 = t_ok.replace("[镜头2] 特写 · 侧角 · 固定。", "[镜头2] 特写 · 侧角 · 急速拉镜→定镜收束。")
+    _, _w_freeze2, _ = validate(_t_freeze2, "2.5", "new")
+    if any(x.startswith(("C18g", "C18h")) for x in _w_freeze2):
+        print("FAIL self-test: 「急速拉镜→定镜收束」不应报 C18g/C18h", _w_freeze2); ok = 0
+    # 69g) 定格族**独立成族**、不并入「固定」（否则污染 C18j 固定配额）
+    _fams_freeze = _cam_families("特写 · 侧角 · 定镜收束")
+    if _fams_freeze != {"定格"}:
+        print("FAIL self-test: 「定镜收束」应归「定格」族且不并入「固定」", sorted(_fams_freeze)); ok = 0
+    # 69h) 运镜库补录词（real-engine §④ 法定运镜方式「环移」/ combat 模式F 库）不再空集
+    for _w_fz, _exp in (("环移", "环绕"), ("甩摇", "甩"), ("TILT-up", "俯仰"),
+                        ("SPIN", "环绕"), ("轨迹跟焦", "跟")):
+        if _cam_families(_w_fz) != {_exp}:
+            print(f"FAIL self-test: 运镜词「{_w_fz}」应解析为 {{{_exp}}}", sorted(_cam_families(_w_fz))); ok = 0
 
     # ---- 70) 多段稿：C17 逐段自查 + C1/C2/C3/C4/C24 不误报（2026-10-10）----
     _seg1 = ("【画幅风格】16:9 横屏 (aspect_ratio=16:9)\n"
@@ -4959,6 +5210,101 @@ def _self_test():
     if not (any(x.startswith("C30j") for x in _w_r1_jk) and any(x.startswith("C30k") for x in _w_r1_jk) and any(x.startswith("C30l") for x in _w_r1_jk)):
         print("FAIL self-test: R1 混入仙侠剑气/凌空悬浮/原地等待应报 C30j/C30k/C30l", _w_r1_jk); ok = 0
 
+    # ===== 2026-10-16 新增：C32 画面段最低三要素 / C18p 景别占比预算（双向断言）=====
+    _v16_head = ("【画幅风格】16:9 横屏 (aspect_ratio=16:9) model=seedance-2.5\n"
+                 "【场景资产】@SCN-堂屋（外观以场景参考图锁定）\n"
+                 "【核心人物】\n- @甲（女，40岁 · 外观以人物参考图锁定）\n"
+                 "【站位声明】@甲（画面左 · 桌旁 · 朝右 · 立 · 身后是木柜）\n"
+                 "【时间轴分镜】\n")
+    _v16_tail = "【音效】环境音\n【强制禁止项】画面：禁字幕；音频：禁背景音乐、禁旁白\n"
+
+    # 72) C32 画面段缺背景/光线
+    _c32_bad_shot = ("00:00-00:04 [镜头1] 中景 · 平视 · 固定。甲落座，抬手把衣袖挽起。"
+                     "声音：无。台词：无。\n")
+    _c32_ok_shot = ("00:04-00:08 [镜头2] 近景 · 平视 · 固定。甲抬眼看向门外，"
+                    "身后的木柜影子压在斑驳的墙面上。声音：无。台词：无。\n")
+    _, _w_c32b, _ = validate(_v16_head + _c32_bad_shot + _v16_tail, "2.5", "new")
+    if not any(x.startswith("C32") for x in _w_c32b):
+        print("FAIL self-test: 画面段只写人物动作、无背景/光线应报 C32", _w_c32b); ok = 0
+    _, _w_c32g, _ = validate(_v16_head + _c32_ok_shot + _v16_tail, "2.5", "new")
+    if any(x.startswith("C32") for x in _w_c32g):
+        print("FAIL self-test: 含背景元素+光线方向的镜行不应报 C32", _w_c32g); ok = 0
+    # 72b) C32 豁免：纯空镜
+    _c32_empty = ("00:00-00:04 [镜头1] 全景 · 平视 · 固定。无人物，堂屋空镜，桌面落满浮尘。"
+                  "声音：无。台词：无。\n")
+    _, _w_c32e, _ = validate(_v16_head + _c32_empty + _v16_tail, "2.5", "new")
+    if any(x.startswith("C32") for x in _w_c32e):
+        print("FAIL self-test: 纯空镜（写明「无人物」）应豁免 C32", _w_c32e); ok = 0
+    # 72c) C32 光线方向**继承段级基准**（2026-10-16 修正 · 消与 model-adapters §5.0.5b 的互锁夹杀）
+    _v16_head_lt = _v16_head.replace(
+        "【场景资产】@SCN-堂屋（外观以场景参考图锁定）\n",
+        "【场景资产】@SCN-堂屋（外观以场景参考图锁定）；时段光影：东窗硬光勾边 · 室内冷绿阴影 · 暗部补冷绿\n")
+    #   ↓夹具须**不含任何光线词**（"长影/窗光/暮色"等会命中 LIGHT_DIR_RE，使本用例失效——
+    #   2026-10-16 反向验证实证：初版夹具写"投下长影"，把修复回退后自检仍 PASSED）
+    _c32_inherit = ("00:00-00:04 [镜头1] 中景 · 平视 · 固定。甲落座，抬手把衣袖挽起，"
+                    "身后的木柜与门边的木椅都纹丝未动。声音：无。台词：无。\n")
+    _, _w_c32_inh, _ = validate(_v16_head_lt + _c32_inherit + _v16_tail, "2.5", "new")
+    if any(x.startswith("C32") for x in _w_c32_inh):
+        print("FAIL self-test: 段级已立时段光影基准时，镜行不逐镜写光线方向不应报 C32", _w_c32_inh); ok = 0
+    # 72d) 段级**无**基准 + 镜行无光线方向（但有背景）→ 仍应报 C32
+    _c32_nolt = ("00:00-00:04 [镜头1] 中景 · 平视 · 固定。甲落座，抬手把衣袖挽起，"
+                 "身后的木柜立在墙边。声音：无。台词：无。\n")
+    _, _w_c32_nolt, _ = validate(_v16_head + _c32_nolt + _v16_tail, "2.5", "new")
+    if not any(x.startswith("C32") for x in _w_c32_nolt):
+        print("FAIL self-test: 段级无光影基准且镜行无光线方向应报 C32", _w_c32_nolt); ok = 0
+    # 72f) C32 背景词表扩词（2026-10-16 · 治「明确的背景环境行为被漏判」）
+    #   "脚下泥土犁出两道浅沟，竹叶被气浪掀飞" —— 泥土/竹/叶 原表全不在册 → 假 WARN。
+    _c32_bgwide = ("00:00-00:04 [镜头1] 全景 · 平视 · 固定。甲立在空地上，"
+                   "脚下泥土犁出两道浅沟，竹叶被气浪掀飞。声音：无。台词：无。\n")
+    _, _w_c32_bgw, _ = validate(_v16_head_lt + _c32_bgwide + _v16_tail, "2.5", "new")
+    if any(x.startswith("C32") for x in _w_c32_bgw):
+        print("FAIL self-test: 镜行写了明确背景环境行为（泥土/竹叶）不应报 C32", _w_c32_bgw); ok = 0
+
+    # 72e) C22c 顿拍认「微停顿」（2026-10-16 补 · 覆盖 camera-specs-15rules.md §二 规范措辞）
+    _t_beat = ("【画幅风格】16:9 横屏 (aspect_ratio=16:9)\n"
+               "【场景资产】@SCN-擂台\n【核心人物】@CHR-甲\n"
+               "【站位声明】：@甲（画面中）。\n【时间轴分镜】\n"
+               "[镜头1] 0-4秒，中景·平视·固定，@甲 沉肩蓄力，随即暴起一拳砸中，"
+               "命中瞬间 1~2 帧微停顿，接触点火星特写，随即卸力侧滑收势。声音：闷响。\n"
+               "【音效】闷响\n【强制禁止项】字幕。\n")
+    _, _w_beat, _ = validate(_t_beat, "2.0", "new", "1", "on")
+    if any("缺「顿」" in x for x in _w_beat):
+        print("FAIL self-test: 镜行写「微停顿」应被 C22c 认作顿拍", [w for w in _w_beat if "C22c" in w]); ok = 0
+
+    # 73) C18p 景别占比越界（需 ≥10 镜 · 六组归并 · 文戏/打戏分档）
+    def _mk_shots(sizes):
+        out, t = "", 0
+        for i, sz in enumerate(sizes, 1):
+            out += (f"00:{t:02d}-00:{t + 3:02d} [镜头{i}] {sz} · 平视 · 固定。"
+                    "甲坐在桌旁，身后的木柜影子落在墙上，窗光斜切进来。声音：无。台词：无。\n")
+            t += 3
+        return out
+    # 负例：12 镜全是近景（文戏档 近景上限 15%）
+    _, _w_c18p_b, _ = validate(_v16_head + _mk_shots(["近景"] * 12) + _v16_tail, "2.5", "new")
+    if not any(x.startswith("C18p") for x in _w_c18p_b):
+        print("FAIL self-test: 12 镜全近景（文戏档）应报 C18p", _w_c18p_b); ok = 0
+    # 正例：12 镜分布落在文戏档区间内
+    _c18p_good = (["远景"] + ["全景"] * 2 + ["中景"] * 2 + ["中近景"] * 2 + ["近景"]
+                  + ["特写"] * 4)
+    _, _w_c18p_g, _ = validate(_v16_head + _mk_shots(_c18p_good) + _v16_tail, "2.5", "new")
+    if any(x.startswith("C18p") for x in _w_c18p_g):
+        print("FAIL self-test: 景别分布合规不应报 C18p", _w_c18p_g); ok = 0
+    # 73b) 小样本不判：6 镜全近景（<10 镜 → 不判）
+    _, _w_c18p_s, _ = validate(_v16_head + _mk_shots(["近景"] * 6) + _v16_tail, "2.5", "new")
+    if any(x.startswith("C18p") for x in _w_c18p_s):
+        print("FAIL self-test: 镜数 <10 的小样本不应报 C18p", _w_c18p_s); ok = 0
+
+    # 74) 变焦族四件套别名（2026-10-16 修订）：「光学变焦」不得被计入滑动变焦名额
+    if CAM_FAMILIES.get("Zoom") != "光学变焦" or CAM_FAMILIES.get("光学变焦") != "光学变焦":
+        print("FAIL self-test: 变焦族别名错——Zoom/光学变焦 应归「光学变焦」族"); ok = 0
+    if CAM_FAMILIES.get("Dolly") != "滑动变焦":
+        print("FAIL self-test: Dolly 应归「滑动变焦」族"); ok = 0
+    _zf_pat = dict((t, p) for t, p, _l, _s in CAM_HEAVY_LIMITS)["滑动变焦"]
+    if re.search(_zf_pat, "缓慢光学变焦推近") or re.search(_zf_pat, "变焦推拉"):
+        print("FAIL self-test: 纯光学变焦不应命中滑动变焦名额正则"); ok = 0
+    if not re.search(_zf_pat, "滑动变焦（Dolly Zoom）"):
+        print("FAIL self-test: 滑动变焦/Dolly Zoom 应命中滑动变焦名额正则"); ok = 0
+
     print("[+] self-test", "PASSED" if ok else "FAILED")
     return ok
 
@@ -4993,17 +5339,106 @@ def _looks_like_feed(text):
     return False
 
 
+# ============================================================
+# 分单元校验（--by-segment · 2026-10-19 实战回写）
+# 病根：多段投喂稿（如 90s = 3 段 × 30s）整份送检时，validate() 会把三段的
+#   时长与镜号按全文累计解析 → 「30s 的单段」被读成「90s / 17 镜」，进而
+#   误判为打戏档并触发 C21/C22 护栏（实际每段都没有打戏），同时 C10 单镜
+#   时长、C15 特写占比等按段口径的判据全部失真。
+# 修法：按稿内「段N/M」标题把文档切成独立校验单元，逐段跑同一套判据，
+#   结果加 [段N] 前缀汇总；整份文本仍走 finalize_checks（C31 契约按全文核销）。
+# ============================================================
+FEED_COLUMNS_7 = ("【画幅风格】", "【场景资产】", "【核心人物】", "【站位声明】",
+                   "【时间轴分镜】", "【音效】", "【强制禁止项】")
+
+
+def _segment_is_feed(body):
+    """分单元模式下判定「这一段是不是真正的投喂单元」。
+
+    只靠时间轴镜行不够——故事板/预演/看板段里也可能出现镜行与时间码，会被误当投喂段
+    校验并报 C7/C24b 假 FAIL。故再加一条七段式骨架门槛：7 栏命中 ≥4 才算投喂单元。
+    """
+    if not _looks_like_feed(body):
+        return False
+    return sum(1 for column in FEED_COLUMNS_7 if column in body) >= 4
+
+
+SEG_HEAD_RE = re.compile(r"^#{1,6}[^\n]{0,60}?段\s*([0-9]+)\s*(?:[/／]\s*([0-9]+))?[^\n]*$", re.M)
+SEG_BRACKET_RE = re.compile(r"^[ \t]*【?[ \t]*段[ \t]*([0-9]+)[ \t]*(?:[/／][ \t]*([0-9]+))?[ \t]*】?[ \t]*$", re.M)
+
+
+def _split_feed_segments(text):
+    """按「段」标题切分多段投喂稿。返回 [(标签, 正文), ...]；不足 2 段返回 []。
+
+    只认「段 + 数字」的标题形态（`### 段1/3`、`## 段2`、`【段3】`）或
+    `### 2.1 段1/3` 这类带序号的标题；不认正文里出现的「段」字。
+    """
+    marks = [(m.start(), m.group(1)) for m in SEG_HEAD_RE.finditer(text)]
+    if len(marks) < 2:
+        marks = [(m.start(), m.group(1)) for m in SEG_BRACKET_RE.finditer(text)]
+    if len(marks) < 2:
+        return []
+    segs = []
+    for index, (pos, number) in enumerate(marks):
+        end = marks[index + 1][0] if index + 1 < len(marks) else len(text)
+        body = text[pos:end].strip()
+        if body:
+            segs.append((f"段{number}", body))
+    return segs
+
+
+def finalize_checks(text, issues, warns, *, delivery=None, contract=False,
+                    allow_warn=False, director=None):
+    """渲染前统一最终判定；依赖故障不得视为检查通过。"""
+    project_doc = bool(re.search(r"^#{1,3}\s+", text, re.M)) and len(text) > 1500
+    if delivery is not None or contract or project_doc:
+        try:
+            import audit_contract as ac
+            ci, cw, _ = ac.audit_markdown(
+                text, mode="full", director=director, delivery=delivery)
+            warns.extend("C31 " + w for w in cw)
+            if contract or delivery is not None:
+                issues.extend("C31 " + i for i in ci)
+            elif ci:
+                warns.append("C31 交付契约结构指纹未齐备（不代表语义核销）：" + "；".join(ci))
+        except Exception as exc:
+            issues.append(f"C31 契约检查失败（fail closed）：{type(exc).__name__}: {exc}")
+    FATAL_WARN_PREFIXES = (
+        "C2d", "C20c", "C20f", "C20g", "C20h", "C20i", "C20j", "C20k", "C20l", "C20m",
+        "C25d", "C25e", "C26e", "C26f", "C26g",
+        "C30a", "C30b", "C30e", "C30f", "C30g", "C30i", "C30j", "C30k", "C30l",
+    )
+    if not allow_warn:
+        issues.extend(f"[高危实拍必崩阻断] {w}" for w in warns if w.startswith(FATAL_WARN_PREFIXES))
+
+
 def main():
     argv = sys.argv[1:]
     if "--self-test" in argv:
         sys.exit(0 if _self_test() else 1)
-    files = [a for a in argv if not a.startswith("-")]
+    value_flags = {"--model", "--track", "--combat", "--c23", "--style-source",
+                   "--aspect", "--plugin", "--state", "--mode", "--delivery"}
+    files = []
+    skip = False
+    for index, arg in enumerate(argv):
+        if skip:
+            skip = False
+            continue
+        if arg in value_flags:
+            if index + 1 == len(argv) or argv[index + 1].startswith("--"):
+                print(f"[-] {arg} 缺少参数值"); sys.exit(2)
+            skip = True
+        elif not arg.startswith("-"):
+            files.append(arg)
     if not files:
         print(__doc__); sys.exit(2)
 
     def opt(flag, default=None):
         return argv[argv.index(flag) + 1] if flag in argv else default
 
+    delivery = opt("--delivery")
+    if delivery not in (None, "full-project", "agent-bundle", "feed-only"):
+        print("[-] --delivery 必须 full-project/agent-bundle/feed-only"); sys.exit(2)
     model = opt("--model", "2.5")
     if model not in ("2.5", "2.0", "h3"):
         print("[-] --model 必须 2.5/2.0/h3"); sys.exit(2)
@@ -5029,7 +5464,8 @@ def main():
         print(f"[-] 文件不存在：{files[0]}"); sys.exit(2)
     try:
         # utf-8-sig：容忍 Windows 记事本/PowerShell 写出的带 BOM 文件（否则首行字段名（如 subject_definitions: / 【画幅风格】）识别失败）
-        text = open(files[0], encoding="utf-8-sig").read()
+        with open(files[0], encoding="utf-8-sig") as source:
+            text = source.read()
     except UnicodeDecodeError:
         print(f"[-] 文件非 UTF-8 文本：{files[0]}"); sys.exit(2)
     except OSError as e:
@@ -5057,8 +5493,42 @@ def main():
             print("    或镜行是否为「00:00-00:05 [镜头1] 景别 · 视角 · 运镜。…」格式。")
             print("    exit code 3 = 非稿件（既非 PASS 也非 FAIL）。")
             sys.exit(3)
-        issues, warns, stats = validate(text, model, opt("--mode", "new"), track, combat, c23,
-                                        style_source, aspect, plugin=plugin, state_data=state_data)
+        segs = _split_feed_segments(text) if "--by-segment" in argv else []
+        if segs:
+            print(f"[i] 分单元校验：识别到 {len(segs)} 个投喂段，逐段独立跑判据"
+                  "（整份合并解析会把多段时长/镜数累计，误触 C21/C22 并让 C10/C15 失真）")
+            issues, warns, stats = [], [], {"duration_s": 0, "shots": 0, "chars": 0}
+            _skipped, _combat_hit = [], False
+            for _label, _body in segs:
+                if not _segment_is_feed(_body):
+                    _skipped.append(_label)
+                    continue
+                if model != "h3" and _combat_on(_body, combat):
+                    _combat_hit = True
+                _si, _sw, _ss = validate(_body, model, opt("--mode", "new"), track, combat, c23,
+                                         style_source, aspect, plugin=plugin, state_data=state_data)
+                print(f"[i] {_label}：时长{_ss['duration_s']}s 镜头{_ss['shots']} 字符{_ss['chars']}"
+                      f" | FAIL={len(_si)} WARN={len(_sw)}")
+                issues.extend(f"[{_label}] {x}" for x in _si)
+                warns.extend(f"[{_label}] {x}" for x in _sw)
+                for _key in stats:
+                    stats[_key] += _ss[_key]
+            if _skipped:
+                print(f"[i] 另有 {len(_skipped)} 处「段」标题不是投喂单元（故事板/预演等段落），已跳过")
+            if not stats["shots"]:
+                print("[!] --by-segment：未解析出任何可校验的投喂段，回退整份校验")
+                issues, warns, stats = validate(text, model, opt("--mode", "new"), track, combat, c23,
+                                                style_source, aspect, plugin=plugin, state_data=state_data)
+            else:
+                stats["segments"] = len([1 for _l, _b in segs if _segment_is_feed(_b)])
+                stats["combat_hit"] = _combat_hit
+        else:
+            if "--by-segment" in argv:
+                print("[i] --by-segment：未识别到 ≥2 个「段N」标题，按整份文档校验")
+            issues, warns, stats = validate(text, model, opt("--mode", "new"), track, combat, c23,
+                                            style_source, aspect, plugin=plugin, state_data=state_data)
+    finalize_checks(text, issues, warns, delivery=delivery, contract="--contract" in argv,
+                    allow_warn="--allow-warn" in argv, director=style_source)
     if "--json" in argv:
         print(json.dumps({"issues": issues, "warnings": warns, "stats": stats,
                           "track": track, "c14_exempt": track in NARR_TRACKS,
@@ -5067,10 +5537,13 @@ def main():
                           "style_source": style_source},
                          ensure_ascii=False, indent=2))
     else:
-        print(f"[+] 时长{stats['duration_s']}s 镜头{stats['shots']} 字符{stats['chars']} | model={model} mode={opt('--mode','new')} track={track}")
+        _seg_note = f" 段数{stats['segments']}（分单元校验）" if stats.get("segments") else ""
+        print(f"[+] 时长{stats['duration_s']}s 镜头{stats['shots']} 字符{stats['chars']}{_seg_note} | model={model} mode={opt('--mode','new')} track={track}")
         if track in NARR_TRACKS:
             print("[i] 赛道③ 解说叙事：C14 篇幅卡口已豁免（VO 即主体），改判 C14n 旁白-画面映射")
-        if model != "h3" and _combat_on(text, combat):
+        if stats.get("segments") and not stats.get("combat_hit"):
+            pass
+        elif model != "h3" and _combat_on(text, combat):
             print("[i] 打戏稿：已启用 C21 激烈度硬护栏（a 位移 / b 实体接触 / c 贴身时长 / d 构图变化）"
                   " + C22 节奏负载护栏")
             print("[i] C21/C22 均为 WARN 参考·按档放行——R1 枪战/狙击/暗杀/追车/儿童向、R3 大场面/术法对轰、"
@@ -5078,35 +5551,6 @@ def main():
         if model != "h3" and _c23_on(text, c23, style_source):
             print("[i] 画风锁已启用：C23 段8/9 · 区间越界 · 零人名 · 题材匹配 · 单镜超载"
                   + (f"（来源：{style_source}）" if style_source else "（auto）"))
-        # 2026-10-14 交付契约与权威源自动核销（防外部 Agent 拿 P4 格式 PASSED 当全流程任务完成）
-        _is_project_doc = bool(re.search(r"^#{1,3}\s+", text, re.M)) and len(text) > 1500
-        _force_contract = "--contract" in argv
-        if _is_project_doc or _force_contract:
-            try:
-                import audit_contract as _ac
-                _c_iss, _c_warns, _c_pass = _ac.audit_markdown(text, mode="full", director=style_source)
-                if _c_iss:
-                    if _force_contract:
-                        for _ci in _c_iss:
-                            issues.append("C31 " + _ci)
-                    else:
-                        warns.append(
-                            f"C31 交付契约未闭环（检出 {len(_c_iss)} 项文档级硬产出或权威源模板缺失——"
-                            "validate_prompt 仅验 P4 投喂语法，严禁拿格式 PASSED 当任务完成！请运行 "
-                            "`python3 scripts/audit_contract.py <稿>.md` 核销）：" + "；".join(_c_iss[:4])
-                        )
-            except Exception:
-                pass
-        # 2026-10-14 实拍必崩高危红线升级为 CLI 硬阻断（防外部 Agent 顶着比喻具象化/双胞胎视线点名/跨窗递伞穿模/全能参考二次复述外貌/打戏静态架招等高危警告照拿 PASSED 交差；如需仅看警告可传 --allow-warn）
-        FATAL_WARN_PREFIXES = (
-            "C2d", "C20c", "C20f", "C20g", "C20h", "C20i", "C20j", "C20k", "C20l", "C20m",
-            "C25d", "C25e", "C26e", "C26f", "C26g",
-            "C30a", "C30b", "C30e", "C30f", "C30g", "C30i", "C30j", "C30k", "C30l",
-        )
-        if "--allow-warn" not in argv:
-            for w in list(warns):
-                if w.startswith(FATAL_WARN_PREFIXES):
-                    issues.append(f"[高危实拍必崩阻断] {w}")
         for w in warns:
             print("[!] WARN: " + w)
         for e in issues:

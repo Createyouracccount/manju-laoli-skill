@@ -11,7 +11,8 @@ script_feed_diff.py · 「剧本 ↔ 投喂稿」台词对照校验器
 """
 import re, sys, io, argparse, os
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if __name__ == '__main__' and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 
 def norm(s):
@@ -21,7 +22,8 @@ def norm(s):
 
 def parse_script(path, names):
     """抽上游台词：(角色, 提示, 台词原文)。自动识别「剧本格式」与「分镜稿格式」。"""
-    txt = open(path, encoding='utf-8').read()
+    with open(path, encoding='utf-8') as source:
+        txt = source.read()
     out = []
     name_pat = '|'.join(names)
     # 分镜稿格式：台词：角色（提示）："..."  或  台词：无（画外音延续）：角色："..."
@@ -44,11 +46,10 @@ def parse_script(path, names):
 
 def parse_feed(path):
     """抽投喂稿台词：(角色, 语气, 台词原文)"""
-    txt = open(path, encoding='utf-8').read()
-    out = []
-    for m in re.finditer(r'台词：【([^（(]+)（([^）)]*)）：?"(.*?)"】', txt):
-        out.append((m.group(1).strip(), m.group(2).strip(), m.group(3)))
-    return out
+    with open(path, encoding='utf-8') as source:
+        txt = source.read()
+    from gate_check import parse_lines
+    return [(role, tone, line) for role, tone, line, _ in parse_lines(txt)]
 
 
 def ngram_cov(a, b, n=4):
@@ -102,7 +103,8 @@ def main():
 
     script = parse_script(a.script, a.names.split(','))
     feed = parse_feed(a.feed)
-    feed_raw = open(a.feed, encoding='utf-8').read()
+    with open(a.feed, encoding='utf-8') as source:
+        feed_raw = source.read()
 
     print(f'=== 剧本↔投喂 台词对照 ===')
     print(f'剧本：{os.path.basename(a.script)}（{len(script)} 句）')

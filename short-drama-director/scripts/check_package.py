@@ -16,7 +16,7 @@
 
 检查域
 ------
-[A] 版本一致性   根 SKILL / README / 12 子技能 / CHANGELOG 均为 7.4.20；CURRENT 文档无旧版本串
+[A] 版本一致性   根 SKILL / README / 12 子技能 / CHANGELOG 均为 7.4.23；CURRENT 文档无旧版本串
 [B] 结构完整性   总控 references == 47；子技能 == 12；被引用的规则文件真实存在
 [C] 内容规则门   可灵 / 三视图 / 格式别名 / 2.0 首尾帧 / 规则自洽门（全包范围）
 [D] 机检脚本     全部脚本可编译；validate_prompt.py self-test PASS；关键门在案
@@ -83,6 +83,11 @@
          文件可写进表、标上★、画进文件树，却不在必读清单里 —— 照样「是权威」，只是永远没人读。
        修复：总控新增《按需规则文件 · 触发条件台账》（**39 份非必读规则文件全部登记触发条件**）
          + 表演层 `acting-direction.md` 接进 P3 必读（修复前它自声明「P1 写《角色表演档案》」却无读取路径）
+       ◑ 2026-10-16 追加：**扫描域收敛为本套装 13 目录**（`suite_roots()`）——原 `scan_md_files()`
+         用 `os.walk(PKG)` 直扫「包根」，真实部署下把 ① GitHub 仓库根**落地页 `README.md`**（含上一版版本号）
+         ② 用户本机同级**其它技能**（`real-combat-director` / `xuanhuan-combat-director` / …）
+         一并卷入内容规则门 → 升版后必报**与 13 目录无关的假 FAIL**。本域以 **◑16** 锁定扫描域；
+         ◑8 原先的同级技能名白名单属「补丁打补丁」，随之退休。
 [E*31] 资产状态偏离域（2026-10-13 · 用户实测「资产图戴头盔 + 提示词夹头盔 = 两个头盔」）：
        ◒ `CHAR_STATE` 人物持续状态变体（与场景 `SET_STATE` 对称）+ 立绘配饰口径改「默认锁定·可变需声明」
          + 投喂层「资产偏离声明」三件套（`model-adapters.md` §5.0.6）+ 机检 `C29`
@@ -95,7 +100,7 @@
          → 三脚本统一「按小数位数换算」+ 丢镜安全网（对账「原文带时码行数 vs 已解析镜数」）+ 四处 self-test 回归锁
        ◔ ② **C30c/C30d 触发门**：原只认显式 `--plugin real|xuanhuan|combat`，默认 `auto` 下整组静默不跑，
          与总控 SKILL.md 把回执头/声线锁写成硬规形成空档 → `auto` 判出 R1/R3 打戏档时一并核验
-       ◔ ③ **子码计数唯一口径**：手册新增 `SUBCODE-Registry` 机器可读块（现行 **98 条**）为唯一权威；
+       ◔ ③ **子码计数唯一口径**：手册新增 `SUBCODE-Registry` 机器可读块（现行 **99 条**）为唯一权威；
          ㊾ 由「查『自称 68 条』字符串在不在」改为**真校验**（条数自洽 + 脚本/注册清单/手册三方集合双向相等）；
          ㉛ 新增「总控 SKILL 子码清单完整覆盖注册块（含 `C18a~n` 类范围展开）」断言，堵住「手册有、总控无」
 [E*36] 画风锁三方对账域（2026-10-15 Agent 修复 · 治「加卡顶掉老卡 / 漏族 / 数字漂移」）：
@@ -112,9 +117,10 @@ import re
 import sys
 import py_compile
 import subprocess
+import warnings
 
-VERSION = "7.4.20"
-EXPECTED_REFS = 48   # 递归计数（38 份顶层规则库 + style-bible 10 份）。⚠️ 注意：SKILL.md 对外统一声明「48 份规则库」（递归口径），**不得写成 38 份**——2026-10-14 修复了此处 38/48 双值悬挂。
+VERSION = "7.4.26"
+EXPECTED_REFS = 50   # 递归计数（40 份顶层规则库 + style-bible 10 份）。⚠️ 注意：SKILL.md 对外统一声明「50 份规则库」（递归口径）。2026-10-19 新增 delivery-pitfalls.md（交付翻车清单）后由 49 升至 50。
 SUB_SKILLS = [
     "sd-decision-engine", "sd-recon-engine", "sd-script-engine", "sd-overseas-engine",
     "sd-jieshuo-engine",
@@ -176,14 +182,34 @@ def rel(p):
     return os.path.relpath(p, PKG)
 
 
+def suite_roots():
+    """本套装扫描域 = 总控 + 12 子技能（**恰 13 个目录**）。
+    ⚠️ **不得用 `os.walk(PKG)` 直扫「包根」**（2026-10-16 根治）：PKG 在真实部署下未必是
+    「只装本套装的空目录」——
+      ① GitHub 仓库根另置**落地页 `README.md`**（含「上一版版本号 + 多技能套装版」之类版本/沿革表述），
+         升版后被「CURRENT 文档无旧版本串」判为**本套装的规则文件**；
+      ② 用户本机 `.openclaw/workspace/skills/` 下**并列着其它技能**（`real-combat-director` /
+         `xuanhuan-combat-director` / `short-drama-factory` / …），其版本串与文件名被一并卷入。
+    两者都产生**与「本套装 13 目录」无关的假 FAIL**。旧解法是给 ◑8 挂同级技能名**白名单**——
+    属「补丁打补丁」（新增同级即漏）。「全包」的唯一正解 = **本套装 13 目录**，与 ◑8 断言口径一致。"""
+    roots = [BASE]
+    for _n in SUB_SKILLS:
+        _p = sub_skill_path(_n)
+        if _p:
+            roots.append(_p)
+    return roots
+
+
 def scan_md_files():
-    """全包扫描（含 12 子技能）—— 原实现只扫总控，是假通过根因。"""
+    """本套装全包扫描（总控 + 12 子技能）—— 原实现只扫总控，是假通过根因。"""
     out = []
-    for root, _dirs, files in os.walk(PKG):
-        for fn in files:
-            if fn.endswith(".md"):
-                out.append(os.path.join(root, fn))
-    return sorted(out)
+    for _root0 in suite_roots():
+        for root, dirs, files in os.walk(_root0):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+            for fn in files:
+                if fn.endswith(".md"):
+                    out.append(os.path.join(root, fn))
+    return sorted(set(out))
 
 
 def scan_rule_docs():
@@ -250,7 +276,7 @@ check("CURRENT 文档无旧版本串（仅 LEGACY/沿革/代号行可提及）",
 section("[B] 结构完整性")
 
 refs_dir = os.path.join(BASE, "references")
-# 递归计数（含 style-bible/ 子目录知识库），与 SKILL.md/README 的「48 份规则库」口径一致
+# 递归计数（含 style-bible/ 子目录知识库），与 SKILL.md/README 的「50 份规则库」口径一致
 refs = [os.path.relpath(os.path.join(dp, f), refs_dir).replace("\\", "/")
         for dp, _dn, fn in os.walk(refs_dir) for f in fn if f.endswith(".md")]
 check(f"总控 references 规则库 == {EXPECTED_REFS} 份（含 style-bible）",
@@ -275,9 +301,10 @@ check("每个子技能 references >= 3 份", not _thin_refs, "; ".join(_thin_ref
 _bad_ref = []
 REF_TOKEN = re.compile(r"`((?:references/|scripts/|sd-[a-z\-]+/)[^`<>…*]*?\.(?:md|py))`")
 _all_basenames = set()
-for _root, _dirs, _files in os.walk(PKG):
-    for _fn in _files:
-        _all_basenames.add(_fn)
+for _root0 in suite_roots():          # 2026-10-16：同名兜底同样只在 13 目录内找，防越界到同级技能 / 落地页
+    for _root, _dirs, _files in os.walk(_root0):
+        for _fn in _files:
+            _all_basenames.add(_fn)
 for p in scan_rule_docs():
     here = os.path.dirname(p)
     for tok in REF_TOKEN.findall(read(p)):
@@ -385,6 +412,35 @@ for fn in py_files:
     except Exception as e:  # noqa: BLE001
         _compile_fail.append(f"{fn}: {e}")
 check(f"scripts/ 全部 {len(py_files)} 个脚本可编译", not _compile_fail, "; ".join(_compile_fail[:3]))
+
+# ★ 语法告警门（2026-10-16 补 · V7.4.26）
+# 交付脚本每次运行都会把 SyntaxWarning（如非法转义序列 "\["）打到**用户终端**，
+# 属交付件噪声；且未来 Python 版本将把非法转义序列升为 SyntaxError → 直接崩。
+# 历史病灶：本文件内探测 build_board_lite.py 的字符类片段 `[\[【]?` 未加 raw 前缀，
+# 每次跑必打 `SyntaxWarning: invalid escape sequence '\['`；已改为 r"..." 写法。
+_sw, _npy = [], 0
+for _r_sw in suite_roots():
+    for _dp_sw, _dn_sw, _fn_sw in os.walk(_r_sw):
+        _dn_sw[:] = [d for d in _dn_sw if d != "__pycache__"]
+        for _f_sw in _fn_sw:
+            if not _f_sw.endswith(".py"):
+                continue
+            _p_sw = os.path.join(_dp_sw, _f_sw)
+            try:
+                _src_sw = open(_p_sw, encoding="utf-8", errors="replace").read()
+            except Exception:  # noqa: BLE001
+                continue
+            _npy += 1
+            with warnings.catch_warnings(record=True) as _ws_sw:
+                warnings.simplefilter("always")
+                try:
+                    compile(_src_sw, _p_sw, "exec")
+                except SyntaxError as _e_sw:
+                    _sw.append(f"{_f_sw}: SyntaxError {_e_sw}")
+                for _w_sw in _ws_sw:
+                    if issubclass(_w_sw.category, SyntaxWarning):
+                        _sw.append(f"{_f_sw}:{_w_sw.lineno} {_w_sw.message}")
+check(f"◑17 全包 {_npy} 个 .py 零语法告警（非法转义序列 / SyntaxWarning）", not _sw, "; ".join(_sw[:4]))
 
 vp = os.path.join(scripts_dir, "validate_prompt.py")
 check("validate_prompt.py 存在（稿件级出稿门禁）", os.path.exists(vp))
@@ -753,7 +809,7 @@ _combat_guard = read(os.path.join(PKG, "sd-combat-engine", "references",
 #   ② 块内集合 == 脚本出现的全部子码集合（双向 · 防「脚本有、清单无」）
 #   ③ 块内集合 == 手册全文出现的子码集合（双向 · 防「登记了却没进清单」与幽灵码）
 # 改名/加码时只需同步这**一个块**，其余计数落点全部引用本常量。
-SUBCODE_TOTAL = 98
+SUBCODE_TOTAL = 99
 _SUB_PAT = re.compile(r"\bC\d{1,2}[a-z]\d?\b")
 _reg_blk = re.search(r"SUBCODE-Registry:START.*?-->(.*?)<!--\s*SUBCODE-Registry:END",
                      _mcm, re.S)
@@ -1082,7 +1138,7 @@ check("㊱ 去遗留后零断链（总控/子技能两侧入链点均已改指�
       "残留: " + "; ".join(_dangling))
 check("㊱ 计数口径同步（SKILL 声明 == EXPECTED_REFS · 元规则四）",
       "45 份" not in skill and "36 份" not in skill and "37 份" not in skill
-      and "38 份" not in skill and f"{EXPECTED_REFS} 份规则库" in skill and EXPECTED_REFS == 48)
+      and "38 份" not in skill and f"{EXPECTED_REFS} 份规则库" in skill and EXPECTED_REFS == 50)
 check("㊲ M1 出图提示词配套纪律（asset-delivery-modes §4.4 · 2026-10-09 用户实测退回）",
       "出图提示词配套纪律" in _ade and "全套 P2.5 出图提示词" in _ade
       and "character-portrait-templates.md" in _ade and "scene-grid-template.md" in _ade
@@ -1288,9 +1344,13 @@ check("㊾ 互锁①：末镜台词静默预算在案（预算 = 镜长 − 1s �
       and "末镜台词字数预算 = (镜长 − 1 − 标点停顿) × 语速档" in _splic)
 check("㊾ 互锁②：闸门3 已按模型分档（文档 + gate_check.py 实现两侧）",
       "Seedance 2.5 放宽到 ≤2600" in _fmg and "w_soft, w_hard = (2600, 3000) if a.model == '2.5'" in _gck)
-check("㊾ 互锁③：闸门2 末镜特判在 gate_check.py 落地（budget = hit − 1 + 点名提示）",
-      "budget = hit - 1 if is_last else hit" in _gck
-      and "定格期被台词占用" in _gck)
+# 用行为回归替代已废止的局部变量源码指纹，不降低定格扣时与累计对白要求。
+_stability = subprocess.run(
+    [sys.executable, os.path.join(BASE, "scripts", "test_validator_stability.py"),
+     "StabilityTests.test_budget_and_freeze"], capture_output=True, text=True,
+    encoding="utf-8", env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8"})
+check("㊾ 互锁③：累计对白预算、显式定格扣时与否定定格行为回归",
+      _stability.returncode == 0, _stability.stdout + _stability.stderr)
 check("㊾ 互锁④：段7 禁项极简四项（权威模板 + 长清单禁加理由）",
       "【强制禁止项】画面：禁字幕、禁水印（含 Logo）；音频：禁背景音乐、禁旁白。" in _mads
       and "禁项极简（2026-10-13 粉丝实测修订 · 默认只写四项）" in _mads)
@@ -1494,7 +1554,7 @@ check("ㆂ 互锁⑦：camera-transitions-6types.md 指认本库为「扩写 + �
 check("ㆂ 互锁⑧：README 文件清单登记 creative-transition-library 行 + D 锁口径四选一",
       "| 衔接 | `creative-transition-library` |" in read(os.path.join(BASE, "README.md")))
 check("ㆂ 互锁⑨：计数口径同步（SKILL 声明 == EXPECTED_REFS · 元规则四）——本库入包后 SKILL 声明须同步",
-      f"{EXPECTED_REFS} 份规则库" in skill and EXPECTED_REFS == 48
+      f"{EXPECTED_REFS} 份规则库" in skill and EXPECTED_REFS == 50
       and "45 份" not in skill and "37 份" not in skill and "38 份" not in skill)
 check("ㆂ 互锁⑩：必查清单登记第 33 项「技巧型转场（D 锁 ④）」（按需 · 非每段必用）",
       "| 33 | **技巧型转场（D 锁 ④）**" in read(os.path.join(refs_dir, "prompt-feeding-checklist.md")))
@@ -1993,7 +2053,7 @@ check("◑4 四条元规则已立（一 同概念单一权威 / 二 挂载即生
       and "这个断言里的数字，改了会不会导致别的提交失败" in _sm)
 check("◑5 元规则四已落地：份数断言引用 EXPECTED_REFS 常量 + SKILL 无「38 份」残留",
       "38 份" not in skill
-      and "48 份规则库" in skill
+      and f"{EXPECTED_REFS} 份规则库" in skill
       and "EXPECTED_REFS" in open(__file__, encoding="utf-8").read()
       and "f\"{EXPECTED_REFS} 份规则库\"" in open(__file__, encoding="utf-8").read())
 # ⚠️ 元规则四自洽：本断言的判据串不得以字面形式出现在本文件（否则自我命中）。
@@ -2016,11 +2076,28 @@ check("◑7 元规则四已落地：OLD_VER_RE 排除项由 VERSION 常量派生
       "%s" in _oldver_src and "_CUR_ESC" in _oldver_src
       and re.search(r"OLD_VER_RE\s*=\s*re\.compile", _oldver_src) is not None)
 # ◑8 防回归 · 本套装自身不得命中「旧版本串」断言（历史事故：命中被前 6 条截断掩盖）
-_self_hits = [h for h in _bad_old if not h.startswith(("pingshu-", "short-drama-factory",
-                                                       "huhe-", "xuanhuan-", "skill-package-",
-                                                       "real-combat-"))]
+# 2026-10-16：扫描域已收敛为本套装 13 目录（见 ◑16），同级技能名白名单随之退休——
+#   原先靠 `pingshu- / short-drama-factory / huhe- / xuanhuan- / skill-package- / real-combat-`
+#   前缀过滤，属「补丁打补丁」：新增一个同级技能或仓库根落地页即漏。现由 ◑16 从源头锁定。
+_self_hits = _bad_old
 check("◑8 本套装 13 目录零命中「旧版本串」（防命中被截断显示掩盖）",
       not _self_hits, "; ".join(_self_hits[:6]) or "零命中")
+
+# ◑16 扫描域锁定（2026-10-16 根治 · 治「os.walk(PKG) 越界」）：
+#   本套装的规则文件扫描域**恰为 13 个目录**（总控 + 12 子技能）。
+#   事故：`scan_md_files()` 直扫包根 → ① GitHub 仓库根落地页 `README.md`（写着上一版版本号）
+#   ② 用户本机同级其它技能 → 被并入内容规则门，从仓库根跑必报假 FAIL（V7.4.26 升版后实测发现）。
+_scan_outsiders = []
+for _p in scan_md_files():
+    _top = os.path.relpath(_p, PKG).replace("\\", "/").split("/")[0]
+    if _top not in SUB_SKILLS and _top != os.path.basename(BASE):
+        _scan_outsiders.append(os.path.relpath(_p, PKG))
+check("◑16 扫描域锁定：本套装规则文件扫描恰为 13 目录（防 os.walk 越界至仓库根落地页 / 同级技能）",
+      not _scan_outsiders, "; ".join(_scan_outsiders[:6]) or "零越界")
+_root_readme = os.path.join(PKG, "README.md")
+check("◑16 仓库根落地页 README.md 不参与本套装内容规则门（若存在）",
+      (not os.path.exists(_root_readme))
+      or os.path.abspath(_root_readme) not in {os.path.abspath(x) for x in scan_md_files()})
 # ◑9 防回归 · 豁免词不得「整行放过」版本串（2026-10-14 实测事故：
 #     SKILL.md 权威归属表 #19 行写死 `V7.4.18`，因该行同时出现 `CHANGELOG.md`
 #     → 被行级豁免词 `CHANGELOG` 放过，断言与 ◑8 均未报警，逃过整个 V7.4.19 升版）。
@@ -2236,7 +2313,7 @@ _vssm_txt = read(os.path.join(PKG, "sd-qc-engine", "scripts", "validate_seedance
 check("◓5 跨脚本时间轴与逐段化闭环（_c27_shot_span / gate_check / build_board_lite / 手册§八 / 2.5分段门）",
       "parse_time_ranges(line)" in _vp3
       and "GC_TIME_RE" in _gc_txt and "GC_SHOT_NO_RE" in _gc_txt
-      and "[\[【]?" in _bbl_txt
+      and r"[\[【]?" in _bbl_txt
       and "❌ **不识别**" not in _mcm2
       and "SEEDANCE_2_5" in _vssm_txt)
 
@@ -2499,6 +2576,59 @@ check("◔16 ladder STYLES 卡名与选卡表目录同号位一致（堵 #61「�
       not _name_drift,
       "卡名漂移: " + "; ".join(f"#{n} {nm}≠{c}" for n, nm, c in _name_drift))
 
+# ---- ⑰ 闸门5 模型分档 + 分组门槛 + 2.0 图数口径（2026-10-17 补）----
+#   病根：闸门5 原写死 `if len(figs) > 9`，**不读 --model**，与文档闸门5（H3≤9 / 2.5≤30）
+#   脱节 → 一个常数造成双向误判（2.5 挂 10~30 被误杀、2.0 挂 2~9 被漏放）。
+#   本轮同时把粉丝「森林」反馈中站得住的两条（资产隔离 / ② 接口余量）落成规则，
+#   故一并上锁：**改回旧写法或删掉规则段，本节立刻转红**。
+section("[E*37] 闸门5 模型分档 · 分组三门槛 · 2.0 图数口径域（2026-10-17 补）")
+
+_gc_feed = read(os.path.join(sub_skill_path("sd-feed-engine") or "", "scripts", "gate_check.py"))
+_gates_doc = read(os.path.join(sub_skill_path("sd-feed-engine") or "", "references", "feed-mode-and-gates.md"))
+_asset_doc = read(os.path.join(sub_skill_path("sd-feed-engine") or "", "references", "asset-mapping-and-rules.md"))
+_seg_doc = read(os.path.join(BASE, "references", "segment-splicing.md"))
+_skill_doc = read(os.path.join(BASE, "SKILL.md"))
+
+check("◑18 闸门5 已按模型分档：IMG_LIMIT_BY_MODEL + img_gate_check 纯函数在案，且无写死 `if len(figs) > 9:`",
+      ("IMG_LIMIT_BY_MODEL" in _gc_feed)
+      and ("img_gate_check" in _gc_feed)
+      and ("'2.5': 30" in _gc_feed)
+      and not re.search(r'if\s+len\(figs\)\s*>\s*9\s*:', _gc_feed),
+      "闸门5 仍是写死 9 或分档表被删（2.5 会被误杀 / 2.0 会被漏放）")
+
+check("◑19 闸门5·补「分组三重门槛」在案（时长 / 资产数 / 资产隔离）且含边界说明",
+      all(k in _gates_doc for k in ("分组三重门槛", "资产隔离", "同一角色的不同形态",
+                                     "别读成「同角色不能跨组」")),
+      "分组三门槛缺失或边界说明丢失（会被误读成「同角色不能跨组」）")
+
+check("◑20 资产隔离升为第五条铁律，且与「相邻编号」分层并存写明",
+      ("五条铁律" in _asset_doc) and ("同角色多形态分组建" in _asset_doc) \
+      and ("分层生效" in _asset_doc or "分层并存" in _asset_doc),
+      "asset-mapping-and-rules 铁律未升到五条，或未写明与第 4 条的分层关系")
+
+check("◑21 D 锁② 接口余量 + 段缝 ①/② 分流表在案（总控 SKILL 与 segment-splicing 双落点）",
+      ("接口余量" in _seg_doc) and ("分流表" in _seg_doc) \
+      and ("段缝 ①/② 分流口径" in _skill_doc) and ("默认值" in _skill_doc),
+      "② 接口余量或 ①/② 分流口径缺失")
+
+_old20 = [rel(p) for p in scan_rule_docs()
+          if re.search(r'Seedance 2\.0\s*单图 1 张', read(p))
+          or re.search(r'2\.0\s*单图绑定（1 张', read(p))
+          or re.search(r'\*\*Seedance 2\.0\*\*\s*单图绑定', read(p))]
+check("◑22 Seedance 2.0 图数口径已统一（全包不得残留「单图 1 张」旧口径）",
+      not _old20, "仍写单图 1 张: " + ", ".join(_old20))
+
+# ★2026-10-17 达尔文检测补：本轮给 gate_check.py 新增 --img-limit，若只改脚本不改用法索引，
+#   等于又制造一处「脚本改了文档没改」（本包早前那轮「修A漏B」同型病）。
+_feed_skill = read(os.path.join(sub_skill_path("sd-feed-engine") or "", "SKILL.md"))
+check("◑23 gate_check 新参数 --img-limit 已同步到子技能快速索引（防「脚本改了文档没改」）",
+      ("--img-limit" in _gc_feed) and ("--img-limit" in _feed_skill),
+      "gate_check 有 --img-limit 但 sd-feed-engine/SKILL.md 用法行未同步")
+
+check("◑24 sd-feed-engine 机检码清单已覆盖 C31 / C32 / C18p（防子技能码表停在 C30）",
+      all(k in _feed_skill for k in ("C31", "C32", "C18p")),
+      "子技能机检码清单仍停在 C30a~d（与总控 §三 码表脱节）")
+
 # ---------------------------------------------------------------- 汇总
 print()
 print("-" * 62)
@@ -2508,4 +2638,4 @@ if FAILED:
         print(f"      · {f}")
     sys.exit(1)
 print(f"[+] 全部检查通过（现行版本 V{VERSION} · references {len(refs)} 份 · "
-      f"{len(SUB_SKILLS)} 子技能 · 全包扫描 {len(scan_md_files())} 个 Markdown）")
+      f"{len(SUB_SKILLS)} 子技能 · 本套装扫描 {len(scan_md_files())} 个 Markdown）")

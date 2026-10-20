@@ -24,7 +24,8 @@ gate_check.py · 六道闸门校验器（判定口径修正 · 闸门6 扩展素
 """
 import re, sys, io, os, argparse
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if __name__ == '__main__' and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # ---------- 语速表 ----------
 # 只有"节奏维"词才真正决定语速档；"压着嗓子/嘶哑/沉声"是音质力度描述，不必然慢。
@@ -36,6 +37,27 @@ SPEED_BANDS = [
 SPEED_DEFAULT = (3.5, 6.0, '标准~高速（判定按 6 字/秒）')
 
 PAUSE = [('，', 0.2), ('、', 0.2), ('。', 0.4), ('？', 0.4), ('！', 0.4), ('…', 0.8), ('——', 0.6)]
+
+# ---------- 闸门5 单组图片上限（★2026-10-17 分档修复）----------
+# 病根：原实现写死 `if len(figs) > 9`，**不读 --model**，与文档闸门5（H3≤9 / 2.5≤30 / 2.0 单图）
+# 脱节 → 双向误判：2.5 挂 10~30 张被误杀（文档允许 30），2.0 挂 2~9 张被漏放。
+# 2.0 取值依据：官方参考图槽为「单参考图锁形象、无首尾帧」，但粉丝实测（2026-10-17）
+#   平台侧多锚点上传 3~4 张资产图可跑通 → 机检暂取保守值 9，避免既压死实测工作流又放过滥用。
+# 权威 = sd-feed-engine/references/feed-mode-and-gates.md 闸门5 与
+#        short-drama-director/references/asset-delivery-modes.md 数量上限段。
+IMG_LIMIT_BY_MODEL = {'2.5': 30, '2.0': 9, 'h3': 9, 'jimeng': 9}
+IMG_LIMIT_DEFAULT = 9
+
+
+def img_limit(model, override=0):
+    """闸门5 上限解算：显式覆盖优先，否则按 A 锁模型分档。"""
+    return override if override else IMG_LIMIT_BY_MODEL.get(model, IMG_LIMIT_DEFAULT)
+
+
+def img_gate_check(nfig, model, override=0):
+    """闸门5 判定：返回 (是否超限, 上限)。★2026-10-17 抽出为纯函数，供 self-test 双向验证。"""
+    lim = img_limit(model, override)
+    return (nfig > lim, lim)
 
 
 def parse_units(text):
@@ -111,11 +133,9 @@ def parse_lines(body):
     out = []
     # 修正：引号定界改非贪婪 `(.*?)"】` —— 台词内嵌引号（如「先认一句"我做得够好了"」）
     # 会把旧的 `[^"]*` 截断或整句漏检（静默失检）。新式以「"】」为唯一收尾锚点。
-    for m in re.finditer(r'台词：【([^（(]*)（([^）)]*)）：?"(.*?)"】', body):
-        out.append((m.group(1).strip(), m.group(2).strip(), m.group(3), m.group(0)))
-    # 无语气位的台词（违规）
-    for m in re.finditer(r'台词：【([^（(]*)："(.*?)"】', body):
-        out.append((m.group(1).strip(), '', m.group(2), m.group(0)))
+    pattern = r'【([^【】（(:：\n]+?)(?:[（(]([^）)\n]*)[）)])?\s*[:：]\s*["“](.*?)["”]\s*】'
+    for m in re.finditer(pattern, body):
+        out.append((m.group(1).strip(), (m.group(2) or '').strip(), m.group(3), m.group(0)))
     return out
 
 
@@ -227,6 +247,21 @@ def self_test():
     us = parse_units(unit_md)
     if len(us) != 1 or '【画幅风格】' not in us[0][1]:
         print(f'FAIL self-test: parse_units 应切出 1 个投喂单元，实得 {len(us)}'); ok = 1
+    # ★2026-10-17 闸门5 分档双向用例（原实现写死 >9，两向都会判错）
+    #   误杀向：2.5 挂 12 张，文档允许 30 → 必须判合规（旧实现 FAIL）
+    if img_gate_check(12, '2.5')[0]:
+        print('FAIL self-test: 闸门5 在 model=2.5 挂 12 图应合规（上限 30），旧写死 9 会误杀'); ok = 1
+    elif not img_gate_check(31, '2.5')[0]:
+        print('FAIL self-test: 闸门5 在 model=2.5 挂 31 图应超限（上限 30），实判合规'); ok = 1
+    #   漏放向：2.0 挂 12 张，上限 9 → 必须判超限（旧实现只到 >9 才拦，2~9 张全放过）
+    if not img_gate_check(12, '2.0')[0]:
+        print('FAIL self-test: 闸门5 在 model=2.0 挂 12 图应超限（上限 9），实判合规'); ok = 1
+    elif img_gate_check(5, '2.0')[0]:
+        print('FAIL self-test: 闸门5 在 model=2.0 挂 5 图应合规（粉丝实测 ≥3 可跑通），实判超限'); ok = 1
+    elif not img_gate_check(10, 'h3')[0]:
+        print('FAIL self-test: 闸门5 在 model=h3 挂 10 图应超限（上限 9），实判合规'); ok = 1
+    elif img_gate_check(40, '2.5', 40)[0]:
+        print('FAIL self-test: 闸门5 --img-limit 覆盖失效（40 应放行 40 图）'); ok = 1
     if not ok:
         print('[+] gate_check self-test PASSED')
     return ok
@@ -237,6 +272,9 @@ def main():
     ap.add_argument('path', nargs='?')
     ap.add_argument('--model', default='2.5')
     ap.add_argument('--assets', type=int, default=9, help='项目资产库总图数')
+    ap.add_argument('--img-limit', type=int, default=0, dest='img_limit',
+                    help='闸门5 单组图片上限手动覆盖（0=按 --model 分档：2.5→30 / 2.0→9 / h3→9）。'
+                         '2026-10-17 新增：原实现写死 9，不读模型')
     ap.add_argument('--mode', default='auto', choices=['auto', 'M0', 'M1', 'M2', 'm0', 'm1', 'm2'],
                     help='素材形态（V7.3.0）：auto=按交付稿首行「素材形态：Mx」声明判定，'
                          '未声明时按默认 M1 并告警。权威 = references/asset-delivery-modes.md')
@@ -251,7 +289,8 @@ def main():
     if not a.path:
         ap.print_help(); sys.exit(2)
 
-    text = open(a.path, encoding='utf-8').read()
+    with open(a.path, encoding='utf-8') as source:
+        text = source.read()
     units = parse_units(text)
     if not units:
         print('未找到投喂单元（## 【投喂单元 N/M】格式）'); sys.exit(2)
@@ -265,6 +304,7 @@ def main():
           f'  |  素材形态：{mode}（闸门6B · V7.3.0）\n')
 
     # ---- 闸门 0 · 结构完整性自检（防字符损坏导致下游全漏检）----
+    previous_no = None
     for ui, (title, body) in enumerate(units, 1):
         for m in re.finditer(r'【[^】\n]*$', body, re.M):
             fails.append(f'闸门0 段{ui}：【 未闭合（行尾缺 】）→ {m.group(0)[:40]}')
@@ -274,8 +314,11 @@ def main():
             fails.append(f'闸门0 段{ui}：台词行未见 】 收尾 → {m.group(0)[:40]}')
         # 镜号连续
         nums = [int(x) for x in GC_SHOT_NO_RE.findall(body)]
-        if nums and nums != list(range(1, len(nums) + 1)):
-            fails.append(f'闸门0 段{ui}：镜号不连续 {nums}')
+        if nums:
+            if (nums != list(range(nums[0], nums[0] + len(nums))) or nums[0] < 1
+                    or (previous_no is not None and nums[0] not in (1, previous_no + 1))):
+                fails.append(f'闸门0 段{ui}：镜号不连续 {nums}')
+            previous_no = nums[-1]
         # 七段式必备字段（2026-10-09：【接续状态】尾行已废止，从必备列表移除）
         for f in ['【画幅风格】', '【场景资产】', '【核心人物】', '【站位声明】', '【时间轴分镜】']:
             if f not in body:
@@ -305,42 +348,29 @@ def main():
                     warns.append(f'闸门1 段{ui}：镜长雷同（{top[0]}s × {top[1]}/{len(lens)}）')
 
         # 闸门2 台词时长（以最快档 6 字/秒为判定基准）
-        # ★ 末镜让出「末 1 秒硬定格」（2026-10-13 粉丝实测修复）：
-        #   模型优先级 = **先把台词说完** > 执行定格指令（实测：段1 人声说到最后一帧、
-        #   画面末 1 秒运动量与全片持平 = 根本没定格；段2 台词提前 0.65s 念完 → 收住了）。
-        #   硬要求模型「边说话边定格」= 视听分裂（嘴在动、画面冻住）。
-        #   故末镜有效可说话时长 = 镜长 − 1 秒，按此判定；塞不下就前移台词 / 加长末镜 / 末镜改无台词。
-        last_end = shots[-1][2] if shots else None
         for role, tone, line, _ in lines:
             if not tone:
                 fails.append(f'闸门2 段{ui}：台词缺语气位「{role}」（C16b）')
+        for index, (no, s, e, shot_text) in enumerate(shots):
+            dialogue = parse_lines(shot_text)
+            if not dialogue:
                 continue
-            need_fast, need_slow, n, lo, hi = speech_seconds(line, tone)
-            mid = (need_fast + need_slow) / 2   # 舒适中值，仅作 INFO 参考
-            # 找承载该台词的镜长
-            hit = None
-            is_last = False
-            for _, s, e, ln in shots:
-                if line in ln:
-                    hit = e - s
-                    is_last = (e == last_end)
-                    break
-            if hit is None:
-                continue
-            budget = hit - 1 if is_last else hit
-            tail_note = f'（末镜已让出末 1 秒定格期，可说话 {budget}s）' if is_last else ''
+            needs = [speech_seconds(line, tone) for _, tone, line, _ in dialogue]
+            need_fast = sum(item[0] for item in needs)
+            mid = sum((item[0] + item[1]) / 2 for item in needs)
+            # 只有末镜显式声明定格时扣减；否定定格和普通收尾不扣秒。
+            freeze = re.search(r'(?:末|最后)\s*([0-9]+(?:\.[0-9]+)?|一)\s*秒\s*(?:硬)?定格', shot_text)
+            reserve = 0.0
+            if index == len(shots) - 1 and freeze and not re.search(
+                    r'不|非|无|禁止|取消', shot_text[max(0, freeze.start() - 4):freeze.start()]):
+                reserve = 1.0 if freeze.group(1) == '一' else float(freeze.group(1))
+            budget = max(0.0, e - s - reserve)
             if need_fast > budget + a.tol:
-                # 连最快档都塞不进 → 真念不完
-                warns.append(
-                    f'闸门2 段{ui}：台词「{line[:12]}…」{n}字/{tone} 连最快 {hi} 字/秒都需 '
-                    f'{need_fast:.1f}s，可用仅 {budget}s{tail_note} → 真念不完'
-                    + ('（★末镜：定格期被台词占用 → 画面定格而人在说话，须前移台词 / 加长末镜 / 末镜改无台词）'
-                       if is_last else ''))
+                warns.append(f'闸门2 段{ui} 镜头{no}：{len(dialogue)} 句累计最快需 '
+                             f'{need_fast:.1f}s，可用仅 {budget}s → 真念不完')
             elif mid > budget + a.tol:
-                # 最快能过、标准档不够 → 仅需快念，非缺陷
-                infos.append(
-                    f'闸门2 段{ui}：台词「{line[:12]}…」{n}字 标准档需 {mid:.1f}s / '
-                    f'最快 {need_fast:.1f}s，可用 {budget}s{tail_note} → 需快念（非缺陷，不触发精简）')
+                infos.append(f'闸门2 段{ui} 镜头{no}：累计最快 {need_fast:.1f}s，'
+                             f'标准档需 {mid:.1f}s，可用 {budget}s → 需快念（非缺陷）')
 
         # 闸门3 字数（★ 2026-10-13：按模型分档 —— 2.5 可吃更长提示词）
         w_soft, w_hard = (2600, 3000) if a.model == '2.5' else (1900, 2000)
@@ -358,9 +388,13 @@ def main():
             if re.search(r'(?<!【画幅风格】)…?' + re.escape(bad), body) and bad in ('aspect_ratio', '分辨率'):
                 warns.append(f'闸门4 段{ui}：参数「{bad}」疑似留在代码框内')
 
-        # 闸门5 单组图片数
-        if len(figs) > 9:
-            fails.append(f'闸门5 段{ui}：单段引用 {len(figs)} 个图号 > 9')
+        # 闸门5 单组图片数（★2026-10-17 改为按 A 锁模型分档，原写死 9 会误杀 2.5）
+        over, img_lim = img_gate_check(len(figs), a.model, a.img_limit)
+        if over:
+            fails.append(f'闸门5 段{ui}：单段引用 {len(figs)} 个图号 > {img_lim}（model={a.model} 上限）')
+        elif len(figs) > 9 and a.model == '2.5':
+            infos.append(f'闸门5 段{ui}：单段引用 {len(figs)} 个图号（2.5 上限 {img_lim}，合规）'
+                         f'——超过 9 张时请确认每张都有明确职责，多余图位会稀释一致性')
 
         # 闸门6A 编号一致性（图号是否在资产库范围内）
         oob = [f for f in figs if f > a.assets]
