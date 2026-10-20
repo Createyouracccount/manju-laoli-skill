@@ -119,7 +119,7 @@ import py_compile
 import subprocess
 import warnings
 
-VERSION = "7.4.28"
+VERSION = "7.4.25"
 EXPECTED_REFS = 50   # 递归计数（40 份顶层规则库 + style-bible 10 份）。⚠️ 注意：SKILL.md 对外统一声明「50 份规则库」（递归口径）。2026-10-19 新增 delivery-pitfalls.md（交付翻车清单）后由 49 升至 50。
 SUB_SKILLS = [
     "sd-decision-engine", "sd-recon-engine", "sd-script-engine", "sd-overseas-engine",
@@ -413,7 +413,7 @@ for fn in py_files:
         _compile_fail.append(f"{fn}: {e}")
 check(f"scripts/ 全部 {len(py_files)} 个脚本可编译", not _compile_fail, "; ".join(_compile_fail[:3]))
 
-# ★ 语法告警门（2026-10-16 补 · V7.4.28）
+# ★ 语法告警门（2026-10-16 补 · V7.4.25）
 # 交付脚本每次运行都会把 SyntaxWarning（如非法转义序列 "\["）打到**用户终端**，
 # 属交付件噪声；且未来 Python 版本将把非法转义序列升为 SyntaxError → 直接崩。
 # 历史病灶：本文件内探测 build_board_lite.py 的字符类片段 `[\[【]?` 未加 raw 前缀，
@@ -2086,7 +2086,7 @@ check("◑8 本套装 13 目录零命中「旧版本串」（防命中被截断�
 # ◑16 扫描域锁定（2026-10-16 根治 · 治「os.walk(PKG) 越界」）：
 #   本套装的规则文件扫描域**恰为 13 个目录**（总控 + 12 子技能）。
 #   事故：`scan_md_files()` 直扫包根 → ① GitHub 仓库根落地页 `README.md`（写着上一版版本号）
-#   ② 用户本机同级其它技能 → 被并入内容规则门，从仓库根跑必报假 FAIL（V7.4.28 升版后实测发现）。
+#   ② 用户本机同级其它技能 → 被并入内容规则门，从仓库根跑必报假 FAIL（V7.4.25 升版后实测发现）。
 _scan_outsiders = []
 for _p in scan_md_files():
     _top = os.path.relpath(_p, PKG).replace("\\", "/").split("/")[0]
