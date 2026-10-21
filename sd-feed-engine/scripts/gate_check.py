@@ -141,7 +141,9 @@ def parse_lines(body):
 
 # ---------- 闸门 6B · 素材形态（权威 = 总控 references/asset-delivery-modes.md） ----------
 MODE_DECL = re.compile(r'素材形态[：:]\s*[（(]?\s*(M[012])')
-WIRING_HEAD = re.compile(r'^##\s*素材接线单[^\n]*\n', re.M)
+# ★审计补丁P1：放宽标题前缀——「## 五·补 A｜素材接线单」「### 素材接线单（M1 必备）」同为合规写法，
+#   旧正则只认「## 素材接线单」开头，导致带章节序号的稿被判「未附接线单」（实测假告警）。
+WIRING_HEAD = re.compile(r'^#{2,3}\s*[^\n]{0,12}素材接线单[^\n]*\n', re.M)
 # "已核验/核对一致"类虚假核验断言（排除否定与禁止语境）
 FAKE_VERIFY = re.compile(r'(?<![未不])已核验|(?<![未不])核对一致|(?<![未不])核验通过|已与《?资产图册》?一致')
 NEG_CTX = re.compile(r'未|不|禁止|不得|没有|无核验|仅适用|非')

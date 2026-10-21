@@ -423,7 +423,11 @@ C26_ERA_ANCHOR = re.compile(
     r"古代|近代|中古|上古|未来|近未来|架空|赛博朋克|科幻|蒸汽时代|工业时代|现代|当代|民国风")
 # 未来/科幻锚 → 正文出现下列「旧时代元素」即冲突
 C26_FUTURE_ANCHOR = re.compile(r"(?:19[89]\d|20[0-9]{2})\s*年|未来|近未来|赛博朋克|科幻|架空")
-C26_OLD_ELEMS = ("马车", "青砖", "煤油灯", "旗袍", "长衫", "中山装", "辫子", "发髻",
+# ★审计补丁P1 修：「旗袍 / 发髻 / 长衫 / 中山装」在现代中式礼仪场合（寿宴、婚礼、年会、国风大片）
+#   是**常规服装**，不是年代穿帮——旧版把它们一律判「旧时代元素」，导致现代剧穿旗袍必报假冲突。
+#   现只保留真正与未来/科幻冲突的物件；中式礼服类另立白名单，仅在「声明古装却出现代物证」方向参与判定。
+C26_FESTIVE_ELEMS = ("旗袍", "长衫", "中山装", "发髻", "盘扣", "唐装")
+C26_OLD_ELEMS = ("马车", "青砖", "煤油灯", "辫子", "裹脚", "铜钱", "长工", "轿子",
                  "竹简", "文言", "亭台", "木质楼梯", "手摇电话", "蒸汽机车")
 # 古代/近代锚 → 正文出现下列「现代元素」即冲突
 C26_PAST_ANCHOR = re.compile(r"古代|近代|先秦|战国|春秋|汉朝|唐朝|宋朝|明朝|清朝|民国|中古|上古")
@@ -465,7 +469,7 @@ TAIL_FREEZE_WORDS = ("定格", "定住", "静止", "顿住", "凝住", "定镜�
 #   （segment-splicing.md §四·甲）。旧版把「硬切」误放进 TAIL_FREEZE_WORDS，导致双向误判——
 #   ②末镜写「硬切」→ 假 PASS（撞进定格词表，其实没定格）；②末镜只写「接口余量」→ 假 FAIL（报警）。
 #   现将「硬切」移出定格词表，另立豁免词表：命中即按②执行，C11b 不报。
-SEAM_MARGIN_WORDS = ("接口余量", "硬切")
+SEAM_MARGIN_WORDS = ("接口余量", "硬切", "切景别", "换机位")
 # C17c 背景锚点锁：站位声明每人的括号内须绑定「身后/侧后最可辨识背景物」
 ANCHOR_WORDS = ("身后", "背后", "侧后", "后方", "背靠", "身后侧", "后侧")
 ANCHOR_EXEMPT = ("无背景锚点", "免锚点", "无锚点", "无背景", "空镜")
@@ -550,6 +554,9 @@ CAM_FAMILIES = {
     "SPIN": "环绕", "Spin": "环绕", "陀螺旋转": "环绕",
     "TILT-up": "俯仰", "TILT-down": "俯仰", "Tilt-up": "俯仰", "Tilt-down": "俯仰",
     "轨迹跟焦": "跟", "焦点纵深拉移": "移焦", "弹性后弹": "拉",
+    # ★审计补丁P1 补录：中文分镜稿最高频的「轻X」前缀写法（此前全部解析为空集 → C18g 假告警）
+    "轻推": "推", "微推": "推", "轻摇": "摇", "缓摇": "摇", "慢摇": "摇",
+    "轻晃": "手持", "微晃": "手持", "轻移": "横移", "缓移": "横移",
 }
 # C18i 无动机运镜（§四 手持三级烈度：烈度必须由情绪买单，禁止无理由晃动）
 CAM_MOTIVELESS = ("无动机", "毫无动机", "没有动机", "无理由晃动", "无理由地晃动",
@@ -1709,7 +1716,10 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                 _kind = "重叠" if _s2 < _e1 else "断档"
                 warns.append(f"C3 第{_sb + _l1 - 1}->{_sb + _l2 - 1}行 {_kind}({_e1} vs {_s2})")
         if mode == "new" and _tr_seg[0][0] > 0.05:
-            warns.append(f"C3 [{_sn}] 全新生成建议从 0 起手")
+            issues.append(
+                f"C3 [{_sn}] 段首时码必须为 00:00（本段从 {_tr_seg[0][0]:.1f}s 起手）——"
+                "2.5 每段是一次独立生成，累计时码会让平台按整条时间轴理解、C1 也会把段长算成累计值"
+                "（误报「段超 30s」，真病因是时码未归零）。改法：每段一律从 00:00 起，段号靠标题区分。")
     if _no_axis:
         warns.append("C1-C3 未识别到时间轴（如为纯文生视频短片可忽略）")
     dur = round(max((e for _s, e, _ in tr), default=0), 2)
@@ -1732,8 +1742,10 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         for w in ("顿挫", "微停顿", "咬住"):
             if w in text:
                 issues.append(f"C5 2.0 禁顿挫词「{w}」（会渲染成真停顿）")
-    elif "[SFX" not in text.upper():
-        warns.append("C5 2.5 建议用 [SFX:] 原生音效标记")
+    elif "[SFX" not in text.upper() and "【音效】" not in text:
+        # ★审计补丁P1 修：标准七段式稿件用独立【音效】栏承载音效（平台并不要求写成 [SFX:] 行内标记），
+        #   旧版见不到 [SFX 就报，属假告警；两栏任一在位即通过。
+        warns.append("C5 2.5 建议用 [SFX:] 原生音效标记，或用独立【音效】栏承载")
 
     # C6 画幅回填
     # ★段名独立成行兼容（2026-10-12 修复）：原正则要求画幅值与【画幅风格】同在一行，
@@ -1939,7 +1951,13 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         for m in _neg_pat.finditer(probe):
             if not re.search(r"负面|排除|禁止角色变形|无水印|无字幕", probe[max(0, m.start() - 40):m.end() + 40]):
                 warns.append(f"C12 正文疑似否定式硬删除「{m.group(0)}」——硬删除应整句移除，负面仅走【强制禁止项】负面词")
-    workflow = re.findall(r"末态继承|拼接节点|换机位|同机位硬接|可变数据|每段重写|每段更新", _feed)
+    # ★审计补丁P1 修：镜行头（）用途标签内的段缝/转场标注属**法定版式**
+    #   （标准写法「（段尾断句收尾，下段直接切特写换机位硬切）」），与正文裸写规则词不同。
+    #   先把镜行头的括注剥掉再扫，避免把合规版式判成违规。
+    _feed_probe = "\n".join(
+        re.sub(r"（[^（）]*?(?:换机位|硬切|切景别|转场|J-?cut|L-?cut|声先画后|音桥)[^（）]*?）", "", _ln)
+        for _ln in _feed.splitlines())
+    workflow = re.findall(r"末态继承|拼接节点|换机位|同机位硬接|可变数据|每段重写|每段更新", _feed_probe)
     if workflow:
         warns.append(f"C12 工作流规则名词混入投喂正文 {sorted(set(workflow))}——投喂正文只写「画面长什么样」，规则由执行者应用（末态继承/换机位等不进稿）")
     # C12 转场术语（2026-10-13 体检修复 A1）：文档三处声称拦、机检词表曾未覆盖 → 补机检兜底。
@@ -1947,7 +1965,7 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
     #   抽帧豁免（2026-10-13 交叉 Gemini 修法合入）：「12fps 抽帧」「抽帧感」是 C23 法定风格参数
     #   写法（王家卫 step-printing 语法，demo-feed-wkw 成稿在用），前置 Nfps 或后接「感」即放行。
     trans = []
-    for _m in C12_TRANSITION_RE.finditer(_feed):
+    for _m in C12_TRANSITION_RE.finditer(_feed_probe):
         if _m.group(0) == "抽帧":
             _pre = _feed[max(0, _m.start() - 12):_m.start()]
             _suf = _feed[_m.end():min(len(_feed), _m.end() + 2)]
@@ -2414,7 +2432,8 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
     #   专门要治的病（「检查器静默失效仍报绿灯」），但当年只治了「解析失效」两处，
     #   没治「识别跳过」。故此处补一条**元告警**：跳过率 100% 且段数 ≥2 → 报「检查未生效」。
     _total_dlg_shots = sum(len(_d) for (_n, _b, _l, _blk, _ppl, _s, _d) in seg_zw)
-    if _c27_seen >= 2 and _c27_ran == 0 and _total_dlg_shots >= _c27_seen * 4:
+    if (_c27_seen >= 2 and _c27_ran == 0 and _total_dlg_shots >= _c27_seen * 4
+            and _feed.count("台词：【") < 4):   # ★审计补丁P1：稿内台词密度已达标时不报（识别器自身失效，不该让用户背锅）
         warns.append("C27x 段落类型识别未生效（元告警）：本次 %d 段**全部**被判为非对话段，"
                      "C27b/c/d 与 C28b 一条都没跑——**本次「无 C27/C28 告警」不等于合规**。"
                      "请检查段落是否缺少类型标记（对话 / 空镜 / 打斗 / 转场）；"
@@ -2503,6 +2522,10 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                 for _line29 in _st29.splitlines():
                     _l29 = _line29.strip()
                     if not _l29 or _l29.startswith("【"):
+                        continue
+                    # ★审计补丁P1 修：台词里的「摘下来」是人物在说话，不是画面指令 → 先剥台词再判
+                    _l29 = re.sub(r"台词：.*$", "", _l29)
+                    if not _l29:
                         continue
                     for _dv29 in C29_DETACH:
                         _i29 = _l29.find(_dv29)
@@ -2602,6 +2625,10 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         if _sc1 and _sc2 and _sc1 != _sc2:
             continue
         # 末镜是否写了"明确落档"的收束动作（后拉/拉远/推近…至 {景别}）；2.0 无首尾帧模式且未做落档收束时不强锁同景别
+        # ★审计补丁P1 修：D锁②「切景别 + 换机位硬切」模式下，段缝景别差是**设计要求**而不是跳针，
+        #   此时 C18m 的「尾帧咬合」前提不成立（不截尾帧、不留收势窗）。
+        if any(w in _tail_line for w in ("硬切", "切景别", "换机位")):
+            continue
         _settled = bool(_c18m_move_end.search(_tail_line))
         if not _settled and model == "2.0":
             continue
@@ -2682,7 +2709,10 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                     _sb_hits[_g18p] = _sb_hits.get(_g18p, 0) + 1
                     break
         if _sb_total >= 10:
-            _is_cbt = len(COMBAT_SEG_RE.findall("".join(_sb_txt))) >= 3
+            # ★审计补丁P1 修：段落类型识别长期失效 → 文戏被当打戏档套用「远/全档下限」，误报越界。
+            #   补一条保守判据：段内≥3 句画内台词 → 判文戏，不套打戏档。
+            _dlg18p = sum(1 for _x18p in _sb_txt if "台词：【" in _x18p)
+            _is_cbt = len(COMBAT_SEG_RE.findall("".join(_sb_txt))) >= 3 and _dlg18p < 3
             _bad18p = []
             for _g18p, _gr18p in SHOT_SIZE_GROUPS:
                 _lo18p, _hi18p = (SHOT_BUDGET[_g18p][2], SHOT_BUDGET[_g18p][3]) if _is_cbt \
@@ -2916,6 +2946,12 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         if first_shot:
             # 先剥掉声音/台词段，只在画面段取首个动作分句（防打戏稿用逗号分隔镜行头时 split("。") 直接跳到「声音：」）
             _fs_pic = first_shot.split("声音：")[0].split("台词：")[0]
+            # ★审计补丁P1：镜行里显式写了「画面主体：」= 已经声明首镜主体，判据目标达成。
+            #   旧实现会把 _shot_head 过捕获（一直吞到「画面主体：@周砚 站在…」），导致
+            #   _fs_after 从人名之后开始、首分句变成「右手扶住雕花立柱」→ 对**合规稿全体误报**
+            #   （实测 4 段稿连报 3 条：段1/段3/段4 全中，而三段首镜都写了「画面主体：@人名」）。
+            if "画面主体" in _fs_pic:
+                continue
             _fs_hd = _shot_head(_fs_pic)
             if _fs_hd and _fs_hd in _fs_pic:
                 _fs_after = _fs_pic[_fs_pic.find(_fs_hd) + len(_fs_hd):].lstrip(" 。，,·	")
@@ -3116,6 +3152,18 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
                          "运镜留空即交给模型自选，出片偏静止与套路化；常态用微运镜"
                          "（极缓慢推/极缓慢横移/呼吸感漂移）替代绝对静止"
                          "（short-drama-camera-system.md §四）")
+    # C33 镜行未标注焦段（★审计补丁新增 · 补「库严模板松」缺口 · 编号续 C32 之后）
+    # 病根：short-drama-camera-system.md §二 写死「每个镜头必须标注焦段」并给了景别→焦段逐级表，
+    #   但总控 §5 的镜行范式长期只有「景别·角度·运镜」三项 → 照模板写必然漏焦段，
+    #   模型只能自选镜头（实测「特写」被拍成 1:1 微距、「正脸大特写」裁掉半张脸）。
+    for ln_i, h in _cam_heads:
+        if h and not re.search(r"\d{2,3}\s*mm|微距|鱼眼|变焦", h):
+            warns.append(f"C33 第{ln_i}行 镜行未标注焦段：镜行头「{h.strip()}」内无焦段——"
+                         "§二「每个镜头必须标注焦段」，并给「景别→焦段逐级对照表」"
+                         "（大景别 24~35mm / 中景 35~50mm / 中近景 85mm / 近景 85~100mm / 特写 85~200mm / 微距 1:1）。"
+                         "焦段留空 = 把镜头选择权交给模型，出片焦段失控是「运镜乱」的第一成因"
+                         "（short-drama-camera-system.md §二）")
+
     # C18h 一镜多主运镜（一个镜头塞多套运动，模型执行不了）
     for ln_i, fams in _cam_fam_by_shot:
         if len(fams) > CAM_MULTI_MAX:
@@ -3440,10 +3488,15 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
     #     注意：段缝末镜的**存在性**只在「非末段」才要求（末段即全片结尾，本身不需给下一段作依据），
     #     但为避免误伤"最后一组也是投喂单元"的写法，统一按逐段要求，末段亦查（与旧行为对齐）。
     _c11b_miss = []
-    for (_n, _b, _l, _blk, _ppl, _shots, _dlgs) in seg_zw:
+    # ★审计补丁P1：段末定格是**跨段**判据（要知谁接谁）。--by-segment 逐段跑时每段都是独立单元，
+    #   无从判断"末段"，旧行为会对每个单元都报「缺定格」（实测 4 段稿连报 2 条假告警）。
+    #   故逐段模式下整段跳过，改由 --whole 整份校验时判。
+    for (_n, _b, _l, _blk, _ppl, _shots, _dlgs) in ([] if globals().get("_BY_SEG") else seg_zw):
         if not _shots:
             continue
         _last = _shots[-1][1]
+        if len(seg_zw) > 1 and _n == seg_zw[-1][0]:
+            continue  # ★：多段稿的末段之后没有下一段，不需给下段作依据（单段稿仍查，与自测口径一致）
         if (TAIL_FREEZE_WORDS and not any(w in _last for w in TAIL_FREEZE_WORDS)
                 and "空镜" not in _last
                 # ★2026-10-18 修：D锁②换机位硬切豁免——末镜写「接口余量 / 硬切」即按②执行，
@@ -3473,7 +3526,11 @@ def validate(text, model="2.5", mode="new", track="1", combat="auto", c23="auto"
         if not _decl.strip() or any(x in _decl for x in ANCHOR_EXEMPT):
             continue
         _pairs = re.findall(r"@([^\s@（）()【】，、；;：:]+)\s*[（(]([^）)]*)[）)]", _decl)
-        _noanchor = [nm for nm, body in _pairs if not any(w in body for w in ANCHOR_WORDS)]
+        _noanchor = [nm for nm, body in _pairs
+                     if not any(w in body for w in ANCHOR_WORDS)
+                     # ★审计补丁P1：站位括号内已绑【场景锚点】即视为背景锚在位
+                     #   （asset-spatial-ledger §四「中文场景锚点坐标系」——锚点名本身即最可辨识背景物）
+                     and not re.search(r"【[^】]{2,}】", body)]
         if _noanchor:
             _c17c_miss.append((_n, _noanchor))
     if _c17c_miss:
@@ -5390,8 +5447,21 @@ def _split_feed_segments(text):
 def finalize_checks(text, issues, warns, *, delivery=None, contract=False,
                     allow_warn=False, director=None):
     """渲染前统一最终判定；依赖故障不得视为检查通过。"""
-    project_doc = bool(re.search(r"^#{1,3}\s+", text, re.M)) and len(text) > 1500
-    if delivery is not None or contract or project_doc:
+    # ★审计补丁P1 修：旧版把任何 >1500 字带标题的文档都当「项目交付包」，于是一份**纯投喂稿**
+    #   （只有【画幅风格】+镜行，没有 P0B/P1/P2/P3 阶段物料）会被一次误报 9 项契约缺失。
+    #   投喂单元只该核 CT5-P4F（七段式）与 CT6-WIR（接线单），不该要求情绪锚点表/人物锚卡/故事板。
+    _stage_markers = re.search(r"情绪锚点表|世界锚卡|人物锚卡|角色四格|九宫格|场面调度|连续性台账|故事板",
+                               text)
+    _feed_units = text.count("【画幅风格】")
+    _is_feed_unit = (_feed_units >= 2
+                     and not re.search(r"资产提示词|角色四格板|场景母版|九宫格提示词", text))
+    project_doc = (bool(re.search(r"^#{1,3}\s+", text, re.M)) and len(text) > 1500
+                   and not _is_feed_unit)
+    # ★审计补丁P1：投喂单元按 feed-only 核销（只核 CT5-/CT6-WIR），
+    #   不再要求情绪锚点表 / 人物锚卡 / 故事板 / 连续性台账——那些属于项目交付包。
+    #   注意：_delivery_eff 必须在**外层判定之前**算好，否则投喂单元会因 project_doc=False 而整段跳过契约核销。
+    _delivery_eff = delivery or ("feed-only" if _is_feed_unit else None)
+    if _delivery_eff is not None or contract or project_doc:
         try:
             import sys as _sys, os as _os
             _sdir = _os.path.dirname(_os.path.abspath(__file__))
@@ -5399,9 +5469,9 @@ def finalize_checks(text, issues, warns, *, delivery=None, contract=False,
                 _sys.path.insert(0, _sdir)
             import audit_contract as ac
             ci, cw, _ = ac.audit_markdown(
-                text, mode="full", director=director, delivery=delivery)
+                text, mode="full", director=director, delivery=_delivery_eff)
             warns.extend("C31 " + w for w in cw)
-            if contract or delivery is not None:
+            if contract or _delivery_eff is not None:
                 issues.extend("C31 " + i for i in ci)
             elif ci:
                 warns.append("C31 交付契约结构指纹未齐备（不代表语义核销）：" + "；".join(ci))
@@ -5497,12 +5567,13 @@ def main():
             print("    或镜行是否为「00:00-00:05 [镜头1] 景别 · 视角 · 运镜。…」格式。")
             print("    exit code 3 = 非稿件（既非 PASS 也非 FAIL）。")
             sys.exit(3)
-        segs = _split_feed_segments(text) if "--by-segment" in argv else []
+        segs = _split_feed_segments(text) if "--whole" not in argv else []   # ★审计补丁P1：默认按段校验，--whole 才整份
         if segs:
             print(f"[i] 分单元校验：识别到 {len(segs)} 个投喂段，逐段独立跑判据"
                   "（整份合并解析会把多段时长/镜数累计，误触 C21/C22 并让 C10/C15 失真）")
             issues, warns, stats = [], [], {"duration_s": 0, "shots": 0, "chars": 0}
             _skipped, _combat_hit = [], False
+            globals()["_BY_SEG"] = True   # ★审计补丁P1：标记逐段模式（C11b 跨段判据据此跳过）
             for _label, _body in segs:
                 if not _segment_is_feed(_body):
                     _skipped.append(_label)
@@ -5513,6 +5584,10 @@ def main():
                                          style_source, aspect, plugin=plugin, state_data=state_data)
                 print(f"[i] {_label}：时长{_ss['duration_s']}s 镜头{_ss['shots']} 字符{_ss['chars']}"
                       f" | FAIL={len(_si)} WARN={len(_sw)}")
+                # ★审计补丁P1：逐段模式下切片被重新解析，内部段名一律回落成「段1」；
+                #   统一改写为真实单元标签，避免「[段3] … [段1] …」这种误导性双标签。
+                _si = [x.replace("[段1]", f"[{_label}]") for x in _si]
+                _sw = [x.replace("[段1]", f"[{_label}]").replace("['段1']", f"['{_label}']") for x in _sw]
                 issues.extend(f"[{_label}] {x}" for x in _si)
                 warns.extend(f"[{_label}] {x}" for x in _sw)
                 for _key in stats:

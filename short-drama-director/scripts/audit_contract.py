@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-audit_contract.py — 漫剧老李 Short-Drama Director Suite 全流程交付契约与权威源核销器 (V7.4.25)
+audit_contract.py — 漫剧老李 Short-Drama Director Suite 全流程交付契约与权威源核销器 (V7.4.26)
 
 专治外部 Agent 三大通病（2026-10-14 实测根因封堵）：
   1. 「拿 validate_prompt.py 机检全绿当任务完成」——只写 P4 投喂稿，漏掉 P0B 情绪锚点表、P1 表演档案/世界锚/人物锚、P3 场面调度/故事板图、P5 连续性台账/素材接线单；
@@ -75,6 +75,9 @@ CONTRACT_ITEMS_FULL = [
      "逐镜九字段标准分镜 + 每段一张故事板图 CLEAN_GRID(文戏2×2四宫格/打戏2×3六宫格，面板1~4/6) + P3 图形化交付清单"),
     ("CT5-P4F", "P4 相邻段边界推荐表 + 七段式投喂词 + 外挂回执头", "short-drama-director/references/segment-splicing.md + model-adapters.md §5",
      "顶部三行【外挂激活回执头】+ 相邻段边界推荐表(含段缝景别差) + N 组完整七段式投喂词"),
+    ("CT5-P45", "P4.5 《预演故事板》· 条件必出（★审计补丁P1 新增）", "sd-storyboard-engine/references/p45-previs-storyboard.md",
+     "触发条件（任一命中）：① 单段【站位声明】具名 ≥3 人同框 ② 全集 ≥2 个不同 @//scn/ 场景（跨空间）③ 单段内跨 2 场。"
+     "触发则必附 {项目名}-预演故事板.md，并在主稿交付清单列「预演故事板：段n~段m ✅ / ⛔未附（理由）」；未触发须显式写豁免理由"),
     ("CT6-P5Q", "P5 《素材接线单》+ 机检报告 + 《跨镜连续性台账》", "short-drama-director/references/asset-delivery-modes.md + sd-qc-engine/references/continuity-ledger.md",
      "M1 必附《素材接线单》(含只控制什么/不控制什么) + 双门机检结果 + 逐段《跨镜连续性台账》(SET_STATE/CHAR_STATE/出口帧)"),
 ]
@@ -260,6 +263,36 @@ def audit_markdown(text, mode="auto", director=None, delivery=None):
     else:
         issues.append("CT5-P4F 缺失 P4 七段式投喂提示词主体")
 
+    # 5b. CT5-P45 预演故事板（★审计补丁P1 新增 · 治「规则写了但没有任何门，永远不出」）
+    #   旧态：P4.5 在 SKILL.md 里被定义为「可选附加件 · 默认不附」，契约 14 项里没有它，
+    #   机检也不数同框人数 → 用户不点名就 100% 不出（实测漏出）。
+    #   现态：把它的三个触发条件**机检化**，命中不出即 FAIL。
+    _p45_names, _p45_scns, _p45_crossseg = set(), set(), 0
+    for _blk45 in re.findall(r"【站位声明】[：:]?([^\n]*)", text):
+        _ns45 = set(re.findall(r"@([^\s@（）()【】，、；;：:]+)", _blk45))
+        if len(_ns45) >= 3:
+            _p45_names.add(frozenset(_ns45))
+    _p45_scns = set(re.findall(r"@//scn/\s*-\s*([^（(；;\n]+)", text))
+    _p45_crossseg = text.count("【画幅风格】")
+    _p45_hit = []
+    if _p45_names:
+        _p45_hit.append("单段≥3 人同框")
+    if len(_p45_scns) >= 2:
+        _p45_hit.append(f"跨 {len(_p45_scns)} 个场景")
+    if _p45_crossseg >= 2 and _p45_hit:
+        pass
+    if _p45_hit:
+        if ("预演故事板" in text) and ("要看" in text or "本段要验" in text):
+            passed.append("CT5-P45 《预演故事板》在位（触发：" + "、".join(_p45_hit) + "）")
+        else:
+            issues.append(
+                "CT5-P45 缺《预演故事板》（触发：" + "、".join(_p45_hit) + "）——"
+                "P4.5 是**条件必出**，不是可选：≥3 人同框 / 跨 2 场景 / 跨段长镜 任一命中就要附，"
+                "体例见 sd-storyboard-engine/references/p45-previs-storyboard.md"
+                "（一段一节 = 本段要验什么 + 叙述体故事板提示词 + 看图先看这三点）。"
+                "确实不需要时，在主稿显式写「预演故事板：⛔未附（理由）」"
+            )
+
     # 6. CT6: P5 M1 Wiring Table & Continuity Ledger
     # 2026-10-14 修复（P2 级）：「只控制什么」放宽为「控制什么+不控制什么」等价变体
     # （「只控制什么」是「控制什么」的超集串，权威正主写法仍优先命中，不再因少一个「只」字误杀）。
@@ -276,7 +309,7 @@ def audit_markdown(text, mode="auto", director=None, delivery=None):
 
     # 精简交付只核对其承诺范围，不要求 P0/P1/P3/P5 全项目档案。
     if delivery in ("feed-only", "agent-bundle"):
-        prefixes = ("CT5-", "CT6-WIR")
+        prefixes = ("CT5-", "CT6-WIR")   # CT5- 前缀已含 CT5-P4F 与 CT5-P45
         if delivery == "agent-bundle":
             prefixes += ("CT2-", "CT3-")
         issues = [item for item in issues if item.startswith(prefixes)]
@@ -354,6 +387,13 @@ def main():
     with open(args.file, "r", encoding="utf-8") as f:
         txt = f.read()
 
+    # ★审计补丁P1：CLI 自动识别「投喂单元」，否则一份纯投喂稿会被按项目交付包核销、
+    #   一次误报 9 项（情绪锚点表/人物锚卡/调度/故事板/台账），与 validate_prompt 口径不一致。
+    if args.delivery is None and (txt.count("【画幅风格】") >= 2) and not re.search(
+            r"资产提示词|角色四格板|场景母版|九宫格提示词", txt):
+        args.delivery = "feed-only"
+        print("[i] 识别为「投喂单元」（≥2 组七段式、无资产模板段）→ 按 feed-only 核销（只核 CT5-/CT6-WIR）；"
+              "要做全项目核销请显式加 --delivery full-project")
     issues, warns, passed = audit_markdown(txt, mode=args.mode, director=args.director, delivery=args.delivery)
     print(f"=== 📋 全流程交付契约核销报告 ({os.path.basename(args.file)} | mode={args.mode}) ===")
     for p in passed:
